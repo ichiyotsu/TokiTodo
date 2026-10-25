@@ -83,7 +83,11 @@ fun TodoCard(
             )
             .pressScale(interaction, pressedScale = 0.975f),
     ) {
-        Artwork(art = todo.art, modifier = Modifier.fillMaxSize())
+        CoverArt(
+            art = todo.art,
+            coverPath = todo.coverPath,
+            modifier = Modifier.fillMaxSize(),
+        )
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -170,6 +174,21 @@ fun TodoCard(
                         color = Color.White.copy(alpha = 0.78f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (todo.focusCount > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(3.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.55f)),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "专注 ${todo.focusCount} 次",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.88f),
                     )
                 }
             }

@@ -72,7 +72,7 @@ import com.tokitodo.app.data.AppSettings
 import com.tokitodo.app.data.LockSchedule
 import com.tokitodo.app.ui.components.CircleAction
 import com.tokitodo.app.ui.components.EmptyState
-import com.tokitodo.app.ui.components.PageHeader
+import com.tokitodo.app.ui.components.PageTopBar
 import com.tokitodo.app.ui.components.PillAction
 import com.tokitodo.app.ui.components.SectionCard
 import com.tokitodo.app.ui.components.SheetGrabber
@@ -108,8 +108,7 @@ fun LockScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 152.dp),
     ) {
-        PageHeader(
-            title = "锁机",
+        PageTopBar(
             actions = {
                 PillAction(
                     label = "必开权限",
@@ -955,10 +954,10 @@ private fun LockSettingsSheet(
                 },
             )
             ToggleLine(
-                title = "学霸模式",
-                subtitle = "专注时禁止暂停，适合冲刺阶段",
-                checked = settings.studyMode,
-                onCheckedChange = { value -> onUpdate { it.copy(studyMode = value) } },
+                title = "严格模式",
+                subtitle = "专注时禁止暂停，只能提前完成或取消",
+                checked = settings.strictMode,
+                onCheckedChange = { value -> onUpdate { it.copy(strictMode = value) } },
             )
         }
         Spacer(Modifier.height(20.dp))

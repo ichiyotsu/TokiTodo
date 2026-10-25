@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,13 +26,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +52,31 @@ import com.tokitodo.app.ui.TokiMotion
 import com.tokitodo.app.ui.pressScale
 import com.tokitodo.app.ui.theme.PillShape
 import com.tokitodo.app.ui.theme.SectionCardShape
+
+/** 顶部操作区：没有页面大标题，只保留右侧操作和可选的一行胶囊。 */
+@Composable
+fun PageTopBar(
+    modifier: Modifier = Modifier,
+    chip: (@Composable () -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 18.dp, top = 10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
+            content = actions,
+        )
+        if (chip != null) {
+            Spacer(Modifier.height(10.dp))
+            chip()
+        }
+    }
+}
 
 /**
  * 页面头部：大标题 + 圆形操作按钮，下面可以挂一枚「学霸模式」小胶囊。
@@ -107,24 +137,56 @@ fun CircleAction(
     container: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     size: Int = 46,
+    hint: String = contentDescription,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .size(size.dp)
-            .pressScale(interaction, pressedScale = 0.90f),
-        shape = CircleShape,
-        color = container,
-        contentColor = contentColor,
-        shadowElevation = 3.dp,
-        interactionSource = interaction,
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                modifier = Modifier.size((size * 0.46f).dp),
+    var showHint by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    LaunchedEffect(showHint) {
+        if (showHint) {
+            kotlinx.coroutines.delay(1800)
+            showHint = false
+        }
+    }
+    Box {
+        Surface(
+            modifier = modifier
+                .size(size.dp)
+                .pressScale(interaction, pressedScale = 0.90f)
+                .clip(CircleShape)
+                .combinedClickable(
+                    interactionSource = interaction,
+                    indication = ripple(color = contentColor.copy(alpha = 0.2f)),
+                    onClick = onClick,
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showHint = true
+                    },
+                ),
+            shape = CircleShape,
+            color = container,
+            contentColor = contentColor,
+            shadowElevation = 3.dp,
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size((size * 0.46f).dp),
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = showHint,
+            onDismissRequest = { showHint = false },
+            shape = MaterialTheme.shapes.small,
+            containerColor = MaterialTheme.colorScheme.inverseSurface,
+        ) {
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
     }
@@ -136,8 +198,8 @@ fun StudyModeChip(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabledLabel: String = "学霸模式已开启",
-    disabledLabel: String = "点击开启学霸模式",
+    enabledLabel: String = "强制学习模式已开启",
+    disabledLabel: String = "点击开启强制学习模式",
 ) {
     val colors = MaterialTheme.colorScheme
     val background by animateColorAsState(

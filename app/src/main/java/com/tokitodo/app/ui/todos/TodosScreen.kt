@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -38,6 +39,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,7 +57,7 @@ import com.tokitodo.app.data.Todo
 import com.tokitodo.app.data.TodoCollection
 import com.tokitodo.app.ui.components.CircleAction
 import com.tokitodo.app.ui.components.EmptyState
-import com.tokitodo.app.ui.components.PageHeader
+import com.tokitodo.app.ui.components.PageTopBar
 import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.components.StudyModeChip
 import com.tokitodo.app.ui.theme.SheetShape
@@ -78,6 +80,9 @@ fun TodosScreen(
     onOpenStats: () -> Unit,
     onOpenCollections: () -> Unit,
     onClearCompleted: () -> Unit,
+    onCreateCollection: (String) -> TodoCollection,
+    onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     var editing by remember { mutableStateOf<Todo?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
@@ -90,6 +95,12 @@ fun TodosScreen(
     val active = todos.filterNot { it.done }
     val completed = todos.filter { it.done }
     val collectionsById = collections.associateBy { it.id }
+    val listState = rememberLazyListState()
+    LaunchedEffect(completed.size) {
+        if (completed.isNotEmpty()) {
+            runCatching { listState.scrollToItem(0) }
+        }
+    }
 
     fun openEditor(todo: Todo?) {
         editing = todo
@@ -97,12 +108,11 @@ fun TodosScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
-        PageHeader(
-            title = "待办",
+        PageTopBar(
             chip = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StudyModeChip(
-                        enabled = settings.studyMode,
+                        enabled = settings.studyMode || settings.strictMode,
                         onClick = onOpenStudyMode,
                     )
                     Spacer(Modifier.weight(1f))
@@ -151,6 +161,7 @@ fun TodosScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = PaddingValues(
                     start = 20.dp,
                     end = 20.dp,
@@ -207,6 +218,7 @@ fun TodosScreen(
         TodoEditorSheet(
             initial = editing,
             collections = collections,
+            settings = settings,
             defaultMinutes = settings.focusMinutes,
             onDismiss = { editorOpen = false },
             onSave = { todo ->
@@ -216,6 +228,12 @@ fun TodosScreen(
             onDelete = { id ->
                 onDeleteTodo(id)
                 editorOpen = false
+            },
+            onCreateCollection = onCreateCollection,
+            onUpdateSettings = onUpdateSettings,
+            onOpenHistory = {
+                editorOpen = false
+                onOpenHistory()
             },
         )
     }
@@ -286,7 +304,7 @@ private fun TodoMoreMenu(
         shape = MaterialTheme.shapes.medium,
     ) {
         DropdownMenuItem(
-            text = { Text("学霸模式") },
+            text = { Text("强制学习模式") },
             leadingIcon = { Icon(Icons.Rounded.AutoAwesome, null, modifier = Modifier.size(20.dp)) },
             onClick = {
                 onDismiss()

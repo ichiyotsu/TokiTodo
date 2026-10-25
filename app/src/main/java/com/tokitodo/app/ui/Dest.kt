@@ -27,6 +27,8 @@ sealed interface Dest {
     data object WishWall : Dest
     data object Vip : Dest
     data object StudyMode : Dest
+    data object ForceEnhancements : Dest
+    data object Whitelist : Dest
     data object LockSettings : Dest
 
     /** 返回栈深度，用于决定转场方向。 */

@@ -21,7 +21,7 @@ class TokiStore(context: Context) {
         Todo(
             id = json.getString("id"),
             title = json.optString("title", ""),
-            minutes = json.optInt("minutes", 25).coerceIn(1, 240),
+            minutes = json.optInt("minutes", 25).coerceIn(1, 1440),
             art = enumOrDefault(json.optString("art"), TodoArt.Sky),
             collectionId = json.optString("collectionId").takeUnless { it.isBlank() },
             note = json.optString("note", ""),
@@ -30,6 +30,17 @@ class TokiStore(context: Context) {
             lastFocusedAt = if (json.has("lastFocusedAt")) json.optLong("lastFocusedAt") else null,
             focusCount = json.optInt("focusCount", 0),
             focusedMinutes = json.optInt("focusedMinutes", 0),
+            timerMode = enumOrDefault(json.optString("timerMode"), TodoTimerMode.CountDown),
+            type = enumOrDefault(json.optString("type"), TodoType.Pomodoro),
+            goalDateEpochDay = if (json.has("goalDateEpochDay")) {
+                json.optLong("goalDateEpochDay")
+            } else {
+                null
+            },
+            goalHours = json.optDouble("goalHours", 0.0).toFloat(),
+            habitPeriod = enumOrDefault(json.optString("habitPeriod"), HabitPeriod.Daily),
+            habitHours = json.optDouble("habitHours", 0.0).toFloat(),
+            coverPath = json.optString("coverPath").takeUnless { it.isBlank() },
         )
     }
 
@@ -48,6 +59,13 @@ class TokiStore(context: Context) {
                     it.lastFocusedAt?.let { value -> put("lastFocusedAt", value) }
                     put("focusCount", it.focusCount)
                     put("focusedMinutes", it.focusedMinutes)
+                    put("timerMode", it.timerMode.name)
+                    put("type", it.type.name)
+                    it.goalDateEpochDay?.let { value -> put("goalDateEpochDay", value) }
+                    put("goalHours", it.goalHours.toDouble())
+                    put("habitPeriod", it.habitPeriod.name)
+                    put("habitHours", it.habitHours.toDouble())
+                    put("coverPath", it.coverPath ?: "")
                 },
             )
         }
@@ -113,13 +131,20 @@ class TokiStore(context: Context) {
     /* ----------------------------- sessions ----------------------------- */
 
     fun loadSessions(): List<FocusSession> = readArray(KEY_SESSIONS) { json ->
+        val endedAt = json.optLong("endedAt", 0L)
+        val minutes = json.optInt("minutes", 0)
+        val kind = enumOrDefault(json.optString("kind"), SessionKind.Focus)
         FocusSession(
             id = json.optString("id", ""),
-            endedAt = json.optLong("endedAt", 0L),
-            minutes = json.optInt("minutes", 0),
-            kind = enumOrDefault(json.optString("kind"), SessionKind.Focus),
+            endedAt = endedAt,
+            minutes = minutes,
+            kind = kind,
             todoId = json.optString("todoId").takeUnless { it.isBlank() },
             title = json.optString("title", ""),
+            startedAt = json.optLong("startedAt", endedAt - minutes * 60_000L),
+            plannedMinutes = json.optInt("plannedMinutes", minutes),
+            completed = json.optBoolean("completed", kind != SessionKind.Break),
+            note = json.optString("note", ""),
         )
     }
 
@@ -129,10 +154,14 @@ class TokiStore(context: Context) {
                 JSONObject().apply {
                     put("id", it.id)
                     put("endedAt", it.endedAt)
+                    put("startedAt", it.startedAt)
                     put("minutes", it.minutes)
+                    put("plannedMinutes", it.plannedMinutes)
+                    put("completed", it.completed)
                     put("kind", it.kind.name)
                     put("todoId", it.todoId ?: "")
                     put("title", it.title)
+                    put("note", it.note)
                 },
             )
         }
@@ -208,6 +237,31 @@ class TokiStore(context: Context) {
                 soundEnabled = json.optBoolean("soundEnabled", true),
                 vibrationEnabled = json.optBoolean("vibrationEnabled", true),
                 studyMode = json.optBoolean("studyMode", false),
+                strictMode = json.optBoolean("strictMode", false),
+                blockNotifications = json.optBoolean("blockNotifications", false),
+                blockRecents = json.optBoolean("blockRecents", false),
+                hideInRecents = json.optBoolean("hideInRecents", false),
+                lockBlockHome = json.optBoolean("lockBlockHome", false),
+                whitelistPackages = buildSet {
+                    val array = json.optJSONArray("whitelistPackages") ?: JSONArray()
+                    for (index in 0 until array.length()) add(array.optString(index))
+                },
+                cycleEnabled = json.optBoolean("cycleEnabled", false),
+                cycleStudyMinutes = json.optInt("cycleStudyMinutes", 25).coerceIn(1, 180),
+                cycleBreakMinutes = json.optInt("cycleBreakMinutes", 5).coerceIn(1, 60),
+                cycleCount = json.optInt("cycleCount", 4).coerceIn(1, 24),
+                cycleInfinite = json.optBoolean("cycleInfinite", true),
+                keepScreenAwake = json.optBoolean("keepScreenAwake", true),
+                durationPresets = buildList {
+                    val array = json.optJSONArray("durationPresets")
+                    if (array == null) {
+                        addAll(listOf(5, 10, 15, 25, 45, 60, 90))
+                    } else {
+                        for (index in 0 until array.length()) {
+                            add(array.optInt(index, 25).coerceIn(1, 1440))
+                        }
+                    }
+                },
                 lockBlockNotifications = json.optBoolean("lockBlockNotifications", true),
                 lockAllowEmergency = json.optBoolean("lockAllowEmergency", true),
                 lockShowCountdown = json.optBoolean("lockShowCountdown", true),
@@ -237,6 +291,19 @@ class TokiStore(context: Context) {
             put("soundEnabled", settings.soundEnabled)
             put("vibrationEnabled", settings.vibrationEnabled)
             put("studyMode", settings.studyMode)
+            put("strictMode", settings.strictMode)
+            put("blockNotifications", settings.blockNotifications)
+            put("blockRecents", settings.blockRecents)
+            put("hideInRecents", settings.hideInRecents)
+            put("lockBlockHome", settings.lockBlockHome)
+            put("whitelistPackages", JSONArray(settings.whitelistPackages.toList()))
+            put("cycleEnabled", settings.cycleEnabled)
+            put("cycleStudyMinutes", settings.cycleStudyMinutes)
+            put("cycleBreakMinutes", settings.cycleBreakMinutes)
+            put("cycleCount", settings.cycleCount)
+            put("cycleInfinite", settings.cycleInfinite)
+            put("keepScreenAwake", settings.keepScreenAwake)
+            put("durationPresets", JSONArray(settings.durationPresets))
             put("lockBlockNotifications", settings.lockBlockNotifications)
             put("lockAllowEmergency", settings.lockAllowEmergency)
             put("lockShowCountdown", settings.lockShowCountdown)
@@ -289,6 +356,13 @@ class TokiStore(context: Context) {
                             todo.lastFocusedAt?.let { put("lastFocusedAt", it) }
                             put("focusCount", todo.focusCount)
                             put("focusedMinutes", todo.focusedMinutes)
+                            put("timerMode", todo.timerMode.name)
+                            put("type", todo.type.name)
+                            todo.goalDateEpochDay?.let { put("goalDateEpochDay", it) }
+                            put("goalHours", todo.goalHours.toDouble())
+                            put("habitPeriod", todo.habitPeriod.name)
+                            put("habitHours", todo.habitHours.toDouble())
+                            put("coverPath", todo.coverPath ?: "")
                         },
                     )
                 }
@@ -335,10 +409,14 @@ class TokiStore(context: Context) {
                         JSONObject().apply {
                             put("id", session.id)
                             put("endedAt", session.endedAt)
+                            put("startedAt", session.startedAt)
                             put("minutes", session.minutes)
+                            put("plannedMinutes", session.plannedMinutes)
+                            put("completed", session.completed)
                             put("kind", session.kind.name)
                             put("todoId", session.todoId ?: "")
                             put("title", session.title)
+                            put("note", session.note)
                         },
                     )
                 }
@@ -386,6 +464,19 @@ class TokiStore(context: Context) {
                 put("sessionsBeforeLongBreak", settings.sessionsBeforeLongBreak)
                 put("dailyGoalMinutes", settings.dailyGoalMinutes)
                 put("studyMode", settings.studyMode)
+                put("strictMode", settings.strictMode)
+                put("blockNotifications", settings.blockNotifications)
+                put("blockRecents", settings.blockRecents)
+                put("hideInRecents", settings.hideInRecents)
+                put("lockBlockHome", settings.lockBlockHome)
+                put("whitelistPackages", JSONArray(settings.whitelistPackages.toList()))
+                put("cycleEnabled", settings.cycleEnabled)
+                put("cycleStudyMinutes", settings.cycleStudyMinutes)
+                put("cycleBreakMinutes", settings.cycleBreakMinutes)
+                put("cycleCount", settings.cycleCount)
+                put("cycleInfinite", settings.cycleInfinite)
+                put("keepScreenAwake", settings.keepScreenAwake)
+                put("durationPresets", JSONArray(settings.durationPresets))
                 put("reduceMotion", settings.reduceMotion)
                 put("userName", settings.userName)
                 put("userEmoji", settings.userEmoji)

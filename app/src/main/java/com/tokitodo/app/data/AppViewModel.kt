@@ -55,12 +55,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val todo = Todo(
             id = UUID.randomUUID().toString(),
             title = title.trim(),
-            minutes = minutes.coerceIn(1, 240),
+            minutes = minutes.coerceIn(1, 1440),
             art = art,
             collectionId = collectionId,
             note = note.trim(),
         )
         _todos.update { listOf(todo) + it }
+        persistTodos()
+    }
+
+    /** 编辑器保存：已存在则更新，否则插到最前。 */
+    fun upsertTodo(todo: Todo) {
+        _todos.update { list ->
+            if (list.any { it.id == todo.id }) {
+                list.map { if (it.id == todo.id) todo else it }
+            } else {
+                listOf(todo) + list
+            }
+        }
         persistTodos()
     }
 
@@ -86,7 +98,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         persistTodos()
     }
 
-    fun markFocused(todoId: String, minutes: Int) {
+    fun markFocused(todoId: String, minutes: Int, complete: Boolean = false) {
         _todos.update { list ->
             list.map {
                 if (it.id == todoId) {
@@ -94,6 +106,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         focusCount = it.focusCount + 1,
                         focusedMinutes = it.focusedMinutes + minutes,
                         lastFocusedAt = System.currentTimeMillis(),
+                        done = it.done || complete,
                     )
                 } else {
                     it
@@ -103,9 +116,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         persistTodos()
     }
 
+    fun completeTodo(todoId: String) {
+        _todos.update { list ->
+            list.map { if (it.id == todoId) it.copy(done = true) else it }
+        }
+        persistTodos()
+    }
+
     /* ----------------------------- collections ----------------------------- */
 
-    fun addCollection(name: String, tintIndex: Int) {
+    fun addCollection(name: String, tintIndex: Int): TodoCollection {
         val collection = TodoCollection(
             id = UUID.randomUUID().toString(),
             name = name.trim().ifBlank { "新待办集" },
@@ -113,6 +133,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
         _collections.update { listOf(collection) + it }
         persistCollections()
+        return collection
     }
 
     fun updateCollection(id: String, name: String, tintIndex: Int) {
@@ -166,6 +187,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         kind: SessionKind,
         todoId: String? = null,
         title: String = "",
+        startedAt: Long = System.currentTimeMillis() - minutes * 60_000L,
+        plannedMinutes: Int = minutes,
+        completed: Boolean = true,
+        note: String = "",
     ) {
         if (minutes <= 0) return
         val session = FocusSession(
@@ -175,10 +200,39 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             kind = kind,
             todoId = todoId,
             title = title,
+            startedAt = startedAt,
+            plannedMinutes = plannedMinutes,
+            completed = completed,
+            note = note,
         )
         _sessions.update { it + session }
         if (todoId != null && (kind == SessionKind.Focus || kind == SessionKind.Lock)) {
-            markFocused(todoId, minutes)
+            markFocused(todoId, minutes, complete = completed && kind == SessionKind.Focus)
+        }
+        persistSessions()
+    }
+
+    fun updateSession(
+        id: String,
+        title: String,
+        minutes: Int,
+        note: String,
+    ) {
+        _sessions.update { list ->
+            list.map {
+                if (it.id == id) {
+                    val delta = (minutes - it.minutes).coerceIn(-5, 5)
+                    val newMinutes = (it.minutes + delta).coerceAtLeast(1)
+                    it.copy(
+                        title = title.trim().ifBlank { it.title },
+                        minutes = newMinutes,
+                        note = note,
+                        endedAt = it.startedAt + newMinutes * 60_000L,
+                    )
+                } else {
+                    it
+                }
+            }
         }
         persistSessions()
     }
@@ -240,6 +294,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setStudyMode(enabled: Boolean) = updateSettings { it.copy(studyMode = enabled) }
 
+    fun setForceStudy(enabled: Boolean) = updateSettings { it.copy(studyMode = enabled) }
+
+    fun toggleWhitelistPackage(packageName: String) = updateSettings { settings ->
+        settings.copy(
+            whitelistPackages = if (settings.whitelistPackages.contains(packageName)) {
+                settings.whitelistPackages - packageName
+            } else {
+                settings.whitelistPackages + packageName
+            },
+        )
+    }
+
     fun clearAllData() {
         store.clearAll()
         _todos.value = emptyList()
@@ -278,7 +344,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     Todo(
                         id = json.optString("id").ifBlank { UUID.randomUUID().toString() },
                         title = json.optString("title", "未命名待办"),
-                        minutes = json.optInt("minutes", 25).coerceIn(1, 240),
+                        minutes = json.optInt("minutes", 25).coerceIn(1, 1440),
                         art = runCatching { TodoArt.valueOf(json.optString("art")) }
                             .getOrDefault(TodoArt.Sky),
                         collectionId = json.optString("collectionId").takeUnless { it.isBlank() },
@@ -292,6 +358,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         },
                         focusCount = json.optInt("focusCount", 0),
                         focusedMinutes = json.optInt("focusedMinutes", 0),
+                        timerMode = runCatching {
+                            TodoTimerMode.valueOf(json.optString("timerMode"))
+                        }.getOrDefault(TodoTimerMode.CountDown),
+                        type = runCatching { TodoType.valueOf(json.optString("type")) }
+                            .getOrDefault(TodoType.Pomodoro),
+                        goalDateEpochDay = if (json.has("goalDateEpochDay")) {
+                            json.optLong("goalDateEpochDay")
+                        } else {
+                            null
+                        },
+                        goalHours = json.optDouble("goalHours", 0.0).toFloat(),
+                        habitPeriod = runCatching {
+                            HabitPeriod.valueOf(json.optString("habitPeriod"))
+                        }.getOrDefault(HabitPeriod.Daily),
+                        habitHours = json.optDouble("habitHours", 0.0).toFloat(),
+                        coverPath = json.optString("coverPath").takeUnless { it.isBlank() },
                     ),
                 )
             }
@@ -347,6 +429,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             .getOrDefault(SessionKind.Focus),
                         todoId = json.optString("todoId").takeUnless { it.isBlank() },
                         title = json.optString("title", ""),
+                        startedAt = json.optLong(
+                            "startedAt",
+                            json.optLong("endedAt", System.currentTimeMillis()) -
+                                json.optInt("minutes", 0) * 60_000L,
+                        ),
+                        plannedMinutes = json.optInt(
+                            "plannedMinutes",
+                            json.optInt("minutes", 0),
+                        ),
+                        completed = json.optBoolean("completed", true),
+                        note = json.optString("note", ""),
                     ),
                 )
             }
@@ -412,6 +505,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     ).coerceIn(1, 12),
                     dailyGoalMinutes = json.optInt("dailyGoalMinutes", it.dailyGoalMinutes).coerceIn(15, 720),
                     studyMode = json.optBoolean("studyMode", it.studyMode),
+                    strictMode = json.optBoolean("strictMode", it.strictMode),
+                    blockNotifications = json.optBoolean("blockNotifications", it.blockNotifications),
+                    blockRecents = json.optBoolean("blockRecents", it.blockRecents),
+                    hideInRecents = json.optBoolean("hideInRecents", it.hideInRecents),
+                    lockBlockHome = json.optBoolean("lockBlockHome", it.lockBlockHome),
+                    whitelistPackages = buildSet {
+                        val values = json.optJSONArray("whitelistPackages") ?: JSONArray()
+                        for (index in 0 until values.length()) add(values.optString(index))
+                    },
+                    cycleEnabled = json.optBoolean("cycleEnabled", it.cycleEnabled),
+                    cycleStudyMinutes = json.optInt("cycleStudyMinutes", it.cycleStudyMinutes).coerceIn(1, 180),
+                    cycleBreakMinutes = json.optInt("cycleBreakMinutes", it.cycleBreakMinutes).coerceIn(1, 60),
+                    cycleCount = json.optInt("cycleCount", it.cycleCount).coerceIn(1, 24),
+                    cycleInfinite = json.optBoolean("cycleInfinite", it.cycleInfinite),
+                    keepScreenAwake = json.optBoolean("keepScreenAwake", it.keepScreenAwake),
+                    durationPresets = buildList {
+                        val values = json.optJSONArray("durationPresets")
+                        if (values == null) {
+                            addAll(it.durationPresets)
+                        } else {
+                            for (index in 0 until values.length()) {
+                                add(values.optInt(index, 25).coerceIn(1, 1440))
+                            }
+                        }
+                    },
                     reduceMotion = json.optBoolean("reduceMotion", it.reduceMotion),
                     userName = json.optString("userName", it.userName),
                     userEmoji = json.optString("userEmoji", it.userEmoji),

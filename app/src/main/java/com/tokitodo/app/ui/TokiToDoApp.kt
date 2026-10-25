@@ -65,16 +65,20 @@ import com.tokitodo.app.data.Wish
 import com.tokitodo.app.ui.collections.CollectionsScreen
 import com.tokitodo.app.ui.components.FloatingNavBar
 import com.tokitodo.app.ui.extras.CountdownScreen
-import com.tokitodo.app.ui.extras.HistoryScreen
-import com.tokitodo.app.ui.extras.StudyModeScreen
 import com.tokitodo.app.ui.extras.VipScreen
 import com.tokitodo.app.ui.extras.WishWallScreen
+import com.tokitodo.app.ui.force.ForceEnhancementsScreen
+import com.tokitodo.app.ui.force.ForceStudySheet
+import com.tokitodo.app.ui.force.WhitelistScreen
+import com.tokitodo.app.ui.history.HistoryCenterScreen
 import com.tokitodo.app.ui.lock.LockScreen
 import com.tokitodo.app.ui.profile.ProfileScreen
 import com.tokitodo.app.ui.settings.SettingsDetailScreen
 import com.tokitodo.app.ui.stats.StatsScreen
 import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.tokiGlass
+import com.tokitodo.app.ui.timer.CompletionInfo
+import com.tokitodo.app.ui.timer.CompletionScreen
 import com.tokitodo.app.ui.timer.TimerScreen
 import com.tokitodo.app.ui.todos.TodosScreen
 import dev.chrisbanes.haze.hazeSource
@@ -118,7 +122,7 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
     }
     val stack = remember { mutableStateListOf<Dest>() }
     val current: Dest? = stack.lastOrNull()
-    var completion by remember { mutableStateOf<TimerEvent.Finished?>(null) }
+    var completion by remember { mutableStateOf<CompletionInfo?>(null) }
     val context = LocalContext.current
     val currentSettings by rememberUpdatedState(settings)
     val currentSchedules by rememberUpdatedState(schedules)
@@ -130,6 +134,19 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
     DisposableEffect(tone) {
         onDispose { runCatching { tone?.release() } }
+    }
+
+    fun feedback() {
+        if (currentSettings.soundEnabled) {
+            tone?.startTone(ToneGenerator.TONE_PROP_BEEP2, 220)
+        }
+        if (currentSettings.vibrationEnabled) {
+            runCatching {
+                vibrator?.vibrate(
+                    VibrationEffect.createOneShot(180, VibrationEffect.DEFAULT_AMPLITUDE),
+                )
+            }
+        }
     }
 
     LaunchedEffect(timerViewModel) {
@@ -146,24 +163,54 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
                         },
                         todoId = event.todoId,
                         title = event.title,
+                        startedAt = event.startedAt,
+                        plannedMinutes = event.plannedMinutes,
+                        completed = event.completed,
                     )
-                    if (currentSettings.soundEnabled) {
-                        tone?.startTone(ToneGenerator.TONE_PROP_BEEP2, 220)
-                    }
-                    if (currentSettings.vibrationEnabled) {
-                        runCatching {
-                            vibrator?.vibrate(
-                                VibrationEffect.createOneShot(
-                                    180,
-                                    VibrationEffect.DEFAULT_AMPLITUDE,
-                                ),
+                    feedback()
+                    if (event.final) {
+                        if (event.mode == TimerMode.Focus && event.completed) {
+                            event.todoId?.let { appViewModel.completeTodo(it) }
+                            completion = CompletionInfo(
+                                title = event.title,
+                                minutes = event.minutes,
+                                todoId = event.todoId,
                             )
+                        } else if (event.mode == TimerMode.Lock) {
+                            completion = CompletionInfo(
+                                title = "锁机完成",
+                                minutes = event.minutes,
+                                todoId = null,
+                            )
+                        } else if (event.mode == TimerMode.Nap) {
+                            completion = CompletionInfo(
+                                title = "小憩结束",
+                                minutes = event.minutes,
+                                todoId = null,
+                            )
+                        } else {
+                            stack.clear()
+                            tab = Tab.Todos
                         }
                     }
-                    completion = event
                 }
 
-                TimerEvent.Cancelled -> Unit
+                is TimerEvent.Completed -> {
+                    event.todoId?.let { appViewModel.completeTodo(it) }
+                    feedback()
+                    completion = CompletionInfo(
+                        title = event.title,
+                        minutes = event.minutes,
+                        todoId = event.todoId,
+                    )
+                }
+
+                TimerEvent.PauseReminder -> feedback()
+
+                TimerEvent.Cancelled -> {
+                    stack.clear()
+                    tab = Tab.Todos
+                }
             }
         }
     }
@@ -252,11 +299,25 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
                                     title = todo.title,
                                     minutes = todo.minutes,
                                     art = todo.art,
-                                    strict = settings.studyMode,
+                                    strict = settings.strictMode,
+                                    mode = todo.timerMode,
+                                    cycleEnabled = settings.cycleEnabled,
+                                    cycleStudyMinutes = settings.cycleStudyMinutes,
+                                    cycleBreakMinutes = settings.cycleBreakMinutes,
+                                    cycleTotal = settings.cycleCount,
+                                    cycleInfinite = settings.cycleInfinite,
                                 )
                             },
                             onStartFreeFocus = { minutes ->
-                                timerViewModel.startFreeFocus(minutes, settings.studyMode)
+                                timerViewModel.startFreeFocus(
+                                    minutes = minutes,
+                                    strict = settings.strictMode,
+                                    cycleEnabled = settings.cycleEnabled,
+                                    cycleStudyMinutes = settings.cycleStudyMinutes,
+                                    cycleBreakMinutes = settings.cycleBreakMinutes,
+                                    cycleTotal = settings.cycleCount,
+                                    cycleInfinite = settings.cycleInfinite,
+                                )
                             },
                             onStartNap = { minutes -> timerViewModel.startNap(minutes) },
                             onStartLock = { minutes -> timerViewModel.startLock(minutes) },
@@ -301,61 +362,50 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
                 timer = active,
                 showLockCountdown = settings.lockShowCountdown,
                 allowEmergencyUnlock = settings.lockAllowEmergency,
-                onToggle = timerViewModel::toggle,
-                onExtend = timerViewModel::extend,
-                onFinish = timerViewModel::finish,
+                keepAwakeDefault = settings.keepScreenAwake,
+                onKeepAwakeChange = { value ->
+                    appViewModel.updateSettings { it.copy(keepScreenAwake = value) }
+                },
+                onPause = timerViewModel::startPauseCountdown,
+                onResume = timerViewModel::resumeFromPause,
+                onDismissPauseReminder = timerViewModel::dismissPauseReminder,
                 onAbandon = timerViewModel::abandon,
+                onFinishEarly = timerViewModel::finishEarly,
+                onSkipRest = timerViewModel::skipRest,
+                onCycleChanged = { enabled, study, breakMinutes, count, infinite ->
+                    appViewModel.updateSettings {
+                        it.copy(
+                            cycleEnabled = enabled,
+                            cycleStudyMinutes = study,
+                            cycleBreakMinutes = breakMinutes,
+                            cycleCount = count,
+                            cycleInfinite = infinite,
+                        )
+                    }
+                    timerViewModel.updateCycle(enabled, study, breakMinutes, count, infinite)
+                },
             )
         }
     }
 
-    completion?.let { event ->
-        AlertDialog(
-            onDismissRequest = { completion = null },
-            icon = {
-                Icon(
-                    imageVector = when (event.mode) {
-                        TimerMode.Lock -> Icons.Rounded.Lock
-                        TimerMode.Nap -> Icons.Rounded.Spa
-                        else -> Icons.Rounded.AutoAwesome
-                    },
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+    completion?.let { info ->
+        CompletionScreen(
+            info = info,
+            onHome = {
+                completion = null
+                stack.clear()
+                tab = Tab.Todos
             },
-            title = {
-                Text(
-                    when (event.mode) {
-                        TimerMode.Lock -> "锁机完成"
-                        TimerMode.Nap -> "小憩结束"
-                        TimerMode.Break -> "休息结束"
-                        TimerMode.Focus -> "专注完成"
-                    },
-                )
+            onHistory = {
+                completion = null
+                stack.clear()
+                tab = Tab.Profile
+                stack.add(Dest.History)
             },
-            text = {
-                Text(
-                    if (event.mode == TimerMode.Break) {
-                        "休息结束，准备开始下一段专注了吗？"
-                    } else {
-                        "「${event.title}」完成 ${event.minutes} 分钟，已经记进统计数据。"
-                    },
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { completion = null }) { Text("完成") }
-            },
-            dismissButton = {
-                if (event.mode == TimerMode.Focus) {
-                    TextButton(
-                        onClick = {
-                            completion = null
-                            timerViewModel.startBreak(settings.shortBreakMinutes)
-                        },
-                    ) {
-                        Text("休息 ${settings.shortBreakMinutes} 分钟")
-                    }
-                }
+            onAutoHome = {
+                completion = null
+                stack.clear()
+                tab = Tab.Todos
             },
         )
     }
@@ -409,15 +459,22 @@ private fun TabContent(
             onOpenStats = { onSelectTab(Tab.Stats) },
             onOpenCollections = { onSelectTab(Tab.Collections) },
             onClearCompleted = appViewModel::clearCompleted,
+            onCreateCollection = { name ->
+                appViewModel.addCollection(name, appViewModel.collections.value.size % 6)
+            },
+            onUpdateSettings = appViewModel::updateSettings,
+            onOpenHistory = { onOpen(Dest.History) },
         )
 
         Tab.Collections -> CollectionsScreen(
             collections = collections,
             todos = todos,
-            studyMode = settings.studyMode,
+            studyMode = settings.studyMode || settings.strictMode,
             contentPadding = padding,
             onOpenStudyMode = { onOpen(Dest.StudyMode) },
-            onAddCollection = appViewModel::addCollection,
+            onAddCollection = { name, tint ->
+                appViewModel.addCollection(name, tint)
+            },
             onUpdateCollection = appViewModel::updateCollection,
             onDeleteCollection = appViewModel::deleteCollection,
             onStartTodo = onStartTodo,
@@ -487,10 +544,11 @@ private fun DetailContent(
             onOpenHistory = { onOpen(Dest.History) },
         )
 
-        Dest.History -> HistoryScreen(
+        Dest.History -> HistoryCenterScreen(
             sessions = sessions,
             contentPadding = padding,
             onBack = onBack,
+            onUpdateSession = appViewModel::updateSession,
             onDeleteSession = appViewModel::deleteSession,
             onClearSessions = appViewModel::clearSessions,
         )
@@ -518,11 +576,35 @@ private fun DetailContent(
             onGoTodos = onBack,
         )
 
-        Dest.StudyMode -> StudyModeScreen(
-            enabled = settings.studyMode,
+        Dest.StudyMode -> {
+            Box(Modifier.fillMaxSize().padding(padding))
+            ForceStudySheet(
+                settings = settings,
+                onDismiss = onBack,
+                onUpdate = appViewModel::updateSettings,
+                onOpenEnhancements = {
+                    onBack()
+                    onOpen(Dest.ForceEnhancements)
+                },
+                onOpenWhitelist = {
+                    onBack()
+                    onOpen(Dest.Whitelist)
+                },
+            )
+        }
+
+        Dest.ForceEnhancements -> ForceEnhancementsScreen(
+            settings = settings,
             contentPadding = padding,
             onBack = onBack,
-            onToggle = { enabled -> appViewModel.setStudyMode(enabled) },
+            onUpdate = appViewModel::updateSettings,
+        )
+
+        Dest.Whitelist -> WhitelistScreen(
+            settings = settings,
+            contentPadding = padding,
+            onBack = onBack,
+            onToggle = appViewModel::toggleWhitelistPackage,
         )
 
         else -> SettingsDetailScreen(

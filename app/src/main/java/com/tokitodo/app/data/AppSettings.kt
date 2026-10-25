@@ -25,8 +25,28 @@ data class AppSettings(
     val autoStartNext: Boolean = true,
     val soundEnabled: Boolean = true,
     val vibrationEnabled: Boolean = true,
-    /** 学霸模式：专注中不允许暂停，离开计时页会提示。 */
+    /** 强制学习模式总开关；开启后计时中尝试阻止其他 App。 */
     val studyMode: Boolean = false,
+    /** 严格模式：计时中不能暂停，只能提前完成或取消。 */
+    val strictMode: Boolean = false,
+    /** 拦截其他 App 的通知（需要系统通知使用权）。 */
+    val blockNotifications: Boolean = false,
+    /** 提升强制性选项。 */
+    val blockRecents: Boolean = false,
+    val hideInRecents: Boolean = false,
+    val lockBlockHome: Boolean = false,
+    /** 全局白名单包名。 */
+    val whitelistPackages: Set<String> = emptySet(),
+    /** 循环专注：学习 / 休息交替。 */
+    val cycleEnabled: Boolean = false,
+    val cycleStudyMinutes: Int = 25,
+    val cycleBreakMinutes: Int = 5,
+    val cycleCount: Int = 4,
+    val cycleInfinite: Boolean = true,
+    /** 计时页屏幕常亮。 */
+    val keepScreenAwake: Boolean = true,
+    /** 待办编辑器的时长预设，可长按修改。 */
+    val durationPresets: List<Int> = listOf(5, 10, 15, 25, 45, 60, 90),
     /** 锁机页的强制性选项。 */
     val lockBlockNotifications: Boolean = true,
     val lockAllowEmergency: Boolean = true,

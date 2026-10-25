@@ -2,6 +2,7 @@ package com.tokitodo.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -11,9 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Lock
@@ -53,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tokitodo.app.ui.LocalMotionEnabled
 import com.tokitodo.app.ui.Tab
-import com.tokitodo.app.ui.TokiMotion
 import com.tokitodo.app.ui.pressScale
 import com.tokitodo.app.ui.theme.NavBarShape
 
@@ -72,8 +70,9 @@ private val entries = listOf(
 )
 
 /**
- * 底栏：单层毛玻璃胶囊 + 五项。选中项吞进一枚实色药丸，
- * 标签用横向展开而不是直接变宽，避免五个 Tab 互相挤压。
+ * TokiNote 风格的 M3 Expressive 悬浮底栏：
+ * 单层毛玻璃胶囊，未选中只留图标，选中项吞进一枚主色药丸并横向展开文字。
+ * 实时模糊由调用方传入的 [glass] 提供，模拟器无 RenderEffect 时走回退底色。
  */
 @Composable
 fun FloatingNavBar(
@@ -90,21 +89,19 @@ fun FloatingNavBar(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                .shadow(elevation = 18.dp, shape = NavBarShape, clip = false)
+                .padding(horizontal = 24.dp)
+                .shadow(elevation = 16.dp, shape = NavBarShape, clip = false)
                 .clip(NavBarShape)
                 .background(
-                    MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.97f),
+                    MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.86f),
                 )
                 .then(glass)
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                     shape = NavBarShape,
                 )
-                .padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                .padding(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             entries.forEach { entry ->
@@ -114,7 +111,6 @@ fun FloatingNavBar(
                     labels = labels,
                     motion = motion,
                     onSelect = onSelect,
-                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -128,25 +124,24 @@ private fun NavItem(
     labels: Boolean,
     motion: Boolean,
     onSelect: (Tab) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val haptic = LocalHapticFeedback.current
     val colors = MaterialTheme.colorScheme
     val background by animateColorAsState(
         targetValue = if (selected) colors.primary else Color.Transparent,
-        animationSpec = tween(if (motion) TokiMotion.standard else 0),
+        animationSpec = tween(if (motion) 180 else 0),
         label = "navBg",
     )
     val foreground by animateColorAsState(
         targetValue = if (selected) colors.onPrimary else colors.onSurfaceVariant,
-        animationSpec = tween(if (motion) TokiMotion.standard else 0),
+        animationSpec = tween(if (motion) 180 else 0),
         label = "navFg",
     )
-    Box(
-        modifier = modifier
-            .height(if (labels) 54.dp else 48.dp)
-            .clip(RoundedCornerShape(22.dp))
+    Row(
+        modifier = Modifier
+            .height(54.dp)
+            .clip(CircleShape)
             .background(background)
             .clickable(
                 interactionSource = interaction,
@@ -156,33 +151,35 @@ private fun NavItem(
                     onSelect(entry.tab)
                 },
             )
-            .pressScale(interaction, pressedScale = 0.92f),
-        contentAlignment = Alignment.Center,
+            .pressScale(interaction, pressedScale = 0.92f)
+            .padding(horizontal = if (selected) 16.dp else 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (labels) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = if (selected) entry.selectedIcon else entry.icon,
-                    contentDescription = entry.tab.label,
-                    tint = foreground,
-                    modifier = Modifier.size(21.dp),
-                )
-                Spacer(Modifier.height(2.dp))
+        Icon(
+            imageVector = if (selected) entry.selectedIcon else entry.icon,
+            contentDescription = entry.tab.label,
+            tint = foreground,
+            modifier = Modifier.size(22.dp),
+        )
+        AnimatedVisibility(
+            visible = selected && labels,
+            enter = expandHorizontally(
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
+            ) + fadeIn(),
+            exit = shrinkHorizontally(
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 500f),
+            ) + fadeOut(),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(7.dp))
                 Text(
                     text = entry.tab.label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp),
+                    fontWeight = FontWeight.SemiBold,
                     color = foreground,
                     maxLines = 1,
                 )
             }
-        } else {
-            Icon(
-                imageVector = if (selected) entry.selectedIcon else entry.icon,
-                contentDescription = entry.tab.label,
-                tint = foreground,
-                modifier = Modifier.size(23.dp),
-            )
         }
     }
 }

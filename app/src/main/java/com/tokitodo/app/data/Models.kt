@@ -2,7 +2,27 @@ package com.tokitodo.app.data
 
 import com.tokitodo.app.ui.theme.TodoArt
 
-/** 一件要专注的事。时长是「一次完整专注」的长度。 */
+/** 待办使用的计时方式。 */
+enum class TodoTimerMode(val label: String) {
+    CountDown("倒计时"),
+    CountUp("正计时"),
+    NoTimer("不计时"),
+}
+
+/** 待办类型：普通番茄钟 / 定目标 / 养习惯。 */
+enum class TodoType(val label: String) {
+    Pomodoro("普通番茄钟"),
+    Goal("定目标"),
+    Habit("养习惯"),
+}
+
+enum class HabitPeriod(val label: String) {
+    Daily("每日"),
+    Weekly("每周"),
+    Monthly("每月"),
+}
+
+/** 一件要专注的事。minutes 是「一次完整专注」的长度。 */
 data class Todo(
     val id: String,
     val title: String,
@@ -15,6 +35,13 @@ data class Todo(
     val lastFocusedAt: Long? = null,
     val focusCount: Int = 0,
     val focusedMinutes: Int = 0,
+    val timerMode: TodoTimerMode = TodoTimerMode.CountDown,
+    val type: TodoType = TodoType.Pomodoro,
+    val goalDateEpochDay: Long? = null,
+    val goalHours: Float = 0f,
+    val habitPeriod: HabitPeriod = HabitPeriod.Daily,
+    val habitHours: Float = 0f,
+    val coverPath: String? = null,
 )
 
 /** 待办集：一组待办的集合，只保存 todoId，不复制待办。 */
@@ -46,6 +73,10 @@ data class FocusSession(
     val kind: SessionKind = SessionKind.Focus,
     val todoId: String? = null,
     val title: String = "",
+    val startedAt: Long = endedAt - minutes * 60_000L,
+    val plannedMinutes: Int = minutes,
+    val completed: Boolean = kind != SessionKind.Break,
+    val note: String = "",
 )
 
 data class Wish(

@@ -63,7 +63,7 @@ import com.tokitodo.app.data.TodoCollection
 import com.tokitodo.app.ui.components.CircleAction
 import com.tokitodo.app.ui.components.EmptyState
 import com.tokitodo.app.ui.components.GradientBar
-import com.tokitodo.app.ui.components.PageHeader
+import com.tokitodo.app.ui.components.PageTopBar
 import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.components.StudyModeChip
 import com.tokitodo.app.ui.theme.SectionCardShape
@@ -93,8 +93,7 @@ fun CollectionsScreen(
     var expandedId by remember { mutableStateOf<String?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
-        PageHeader(
-            title = "待办集",
+        PageTopBar(
             chip = {
                 StudyModeChip(enabled = studyMode, onClick = onOpenStudyMode)
             },
@@ -170,9 +169,6 @@ fun CollectionsScreen(
                         onEdit = { editing = collection },
                         onStartTodo = onStartTodo,
                     )
-                }
-                item {
-                    NewCollectionTile(onClick = { showCreate = true })
                 }
                 item {
                     Text(
@@ -306,53 +302,6 @@ fun CollectionsScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun NewCollectionTile(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "新建待办集",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "把同一类事情收进一只盒子里",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.size(18.dp),
-        )
     }
 }
 

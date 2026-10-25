@@ -107,17 +107,36 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = if (dark) {
+                        listOf(
+                            Color(0xFF3B2430),
+                            Color(0xFF4B2D2A),
+                            Color(0xFF3A2A2D),
+                            Color(0xFF262020),
+                            MaterialTheme.colorScheme.surface,
+                        )
+                    } else {
+                        listOf(
+                            Color(0xFFE07E97),
+                            Color(0xFFECA387),
+                            Color(0xFFF6CDB1),
+                            Color(0xFFF0DCE4),
+                            MaterialTheme.colorScheme.surface,
+                        )
+                    },
+                ),
+            )
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 132.dp),
+            .padding(bottom = 152.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            ProfileHero()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+        ) {
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                     HeroAction(Icons.Rounded.HelpOutline, "帮助") { helpOpen = true }
                     Spacer(Modifier.width(8.dp))
@@ -207,7 +226,6 @@ fun ProfileScreen(
                     HeroStat("${totalMinutes} 分钟", Icons.Rounded.Timer)
                 }
             }
-        }
 
         Column(modifier = Modifier.padding(horizontal = 18.dp)) {
             Spacer(Modifier.height(16.dp))

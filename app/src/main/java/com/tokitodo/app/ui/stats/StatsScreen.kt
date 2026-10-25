@@ -61,7 +61,7 @@ import com.tokitodo.app.ui.components.FocusBarChart
 import com.tokitodo.app.ui.components.GradientBar
 import com.tokitodo.app.ui.components.Metric
 import com.tokitodo.app.ui.components.MonthHeatmap
-import com.tokitodo.app.ui.components.PageHeader
+import com.tokitodo.app.ui.components.PageTopBar
 import com.tokitodo.app.ui.components.PillAction
 import com.tokitodo.app.ui.components.PillSegmented
 import com.tokitodo.app.ui.components.SectionCard
@@ -195,9 +195,7 @@ fun StatsScreen(
             contentPadding = PaddingValues(bottom = 152.dp),
         ) {
             item {
-                PageHeader(
-                    title = "统计数据",
-                    subtitle = "把专注变成看得见的形状",
+                PageTopBar(
                     actions = {
                         CircleAction(
                             icon = Icons.Rounded.History,
