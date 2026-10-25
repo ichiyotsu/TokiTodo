@@ -336,7 +336,7 @@ fun ForceEnhancementsScreen(
                 SwitchRow(
                     icon = Icons.Rounded.Lock,
                     title = "锁机时禁止打开主界面",
-                    subtitle = "锁机时阻止回到 TokiToDo 主界面，防止强行关闭 App",
+                    subtitle = "锁机时阻止回到 TokiTodo 主界面，防止强行关闭 App",
                     checked = settings.lockBlockHome,
                     onCheckedChange = { value -> onUpdate { it.copy(lockBlockHome = value) } },
                 )

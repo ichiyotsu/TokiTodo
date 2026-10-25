@@ -334,7 +334,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun importJson(raw: String): Boolean = runCatching {
         val root = JSONObject(raw)
-        if (root.optString("app") != "TokiToDo") return false
+        if (root.optString("app") !in setOf("TokiTodo", "TokiToDo")) return false
 
         val todos = buildList {
             val array = root.optJSONArray("todos") ?: JSONArray()

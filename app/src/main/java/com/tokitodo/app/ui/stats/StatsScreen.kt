@@ -207,10 +207,10 @@ fun StatsScreen(
                             contentDescription = "分享专注总结",
                             onClick = {
                                 val text = buildString {
-                                    appendLine("我在 TokiToDo 的专注记录")
+                                    appendLine("我在 TokiTodo 的专注记录")
                                     appendLine("累计专注 ${formatDuration(totalMinutes)} · $totalCount 次")
                                     appendLine("连续专注 $streak 天，今天 ${dayMinutes} 分钟")
-                                    append("#TokiToDo")
+                                    append("#TokiTodo")
                                 }
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
@@ -403,7 +403,7 @@ fun StatsScreen(
                                             type = "text/plain"
                                             putExtra(
                                                 Intent.EXTRA_TEXT,
-                                                "我在 TokiToDo 的专注时长分布（$rangeTitle）共 $distributionTotal 分钟。",
+                                                "我在 TokiTodo 的专注时长分布（$rangeTitle）共 $distributionTotal 分钟。",
                                             )
                                         }
                                         context.startActivity(

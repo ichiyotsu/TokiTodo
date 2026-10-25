@@ -336,7 +336,7 @@ class TokiStore(context: Context) {
         settings: AppSettings,
     ): String {
         val root = JSONObject()
-        root.put("app", "TokiToDo")
+        root.put("app", "TokiTodo")
         root.put("version", 2)
         root.put("exportedAt", System.currentTimeMillis())
         root.put(

@@ -329,7 +329,7 @@ private fun NavBarSettings(
     }
     SectionCard {
         Column(Modifier.padding(18.dp)) {
-            SettingTitle("默认打开", "每次启动 TokiToDo 时先进入哪个页面")
+            SettingTitle("默认打开", "每次启动 TokiTodo 时先进入哪个页面")
             Spacer(Modifier.height(8.dp))
             listOf(Tab.Todos, Tab.Collections, Tab.Lock, Tab.Stats, Tab.Profile).forEach { tab ->
                 val selected = settings.defaultTab == tab.name
@@ -643,7 +643,7 @@ private fun DesktopSettings(settings: AppSettings) {
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "在电脑上查看当前专注状态，需要保持同一局域网。TokiToDo 不会把记录上传到云端。",
+                text = "在电脑上查看当前专注状态，需要保持同一局域网。TokiTodo 不会把记录上传到云端。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -675,7 +675,7 @@ private fun DesktopSettings(settings: AppSettings) {
                     onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "TokiToDo 配对码：$pairingCode")
+                            putExtra(Intent.EXTRA_TEXT, "TokiTodo 配对码：$pairingCode")
                         }
                         context.startActivity(Intent.createChooser(intent, "发送配对码"))
                     },
@@ -791,7 +791,7 @@ private fun OtherSettings(
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
-                    onClick = { exportLauncher.launch("TokiToDo-backup.json") },
+                    onClick = { exportLauncher.launch("TokiTodo-backup.json") },
                     shape = CircleShape,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -860,7 +860,7 @@ private fun OtherSettings(
         Column(Modifier.padding(18.dp)) {
             SettingTitle("关于", null)
             Spacer(Modifier.height(6.dp))
-            listOf("版本" to "0.1.0", "应用" to "TokiToDo", "网络权限" to "未申请").forEach { (key, value) ->
+            listOf("版本" to "0.2.0", "应用" to "TokiTodo", "网络权限" to "未申请").forEach { (key, value) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -932,7 +932,7 @@ private fun OtherSettings(
             title = { Text("隐私说明") },
             text = {
                 Text(
-                    "TokiToDo 没有申请网络权限。待办、专注记录、锁机时段和个人档案都保存在本机，" +
+                    "TokiTodo 没有申请网络权限。待办、专注记录、锁机时段和个人档案都保存在本机，" +
                         "不会同步到任何服务器；卸载应用或清空数据后再无副本，建议定期使用导出备份。",
                 )
             },

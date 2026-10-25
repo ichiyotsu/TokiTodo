@@ -272,7 +272,7 @@ fun FocusPosterSheet(
                     }
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        text = "海报会保存到系统相册 Pictures/TokiToDo",
+                        text = "海报会保存到系统相册 Pictures/TokiTodo",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.45f),
                         modifier = Modifier.padding(start = 4.dp),
@@ -344,7 +344,7 @@ private fun PosterContent(
                     color = Color(0xFF25332C),
                 )
                 Text(
-                    text = "TokiToDo · 专注记录",
+                    text = "TokiTodo · 专注记录",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF6A7B70),
                 )
@@ -523,7 +523,7 @@ private fun PosterContent(
             }
             Spacer(Modifier.width(7.dp))
             Text(
-                text = "TokiToDo",
+                text = "TokiTodo",
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
@@ -634,11 +634,11 @@ private fun buildSlices(sessions: List<FocusSession>): List<PieSlice> {
 
 private fun savePoster(context: android.content.Context, bitmap: Bitmap): Boolean = runCatching {
     val values = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, "TokiToDo-${System.currentTimeMillis()}.jpg")
+        put(MediaStore.Images.Media.DISPLAY_NAME, "TokiTodo-${System.currentTimeMillis()}.jpg")
         put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
         put(
             MediaStore.Images.Media.RELATIVE_PATH,
-            Environment.DIRECTORY_PICTURES + "/TokiToDo",
+            Environment.DIRECTORY_PICTURES + "/TokiTodo",
         )
         put(MediaStore.Images.Media.IS_PENDING, 1)
     }

@@ -830,7 +830,7 @@ fun VipScreen(
                     }
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "TokiToDo 完整版",
+                        text = "TokiTodo 完整版",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                     )

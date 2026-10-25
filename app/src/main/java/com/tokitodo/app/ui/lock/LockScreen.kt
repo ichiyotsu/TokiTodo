@@ -216,7 +216,7 @@ fun LockScreen(
                     )
                 }
                 Text(
-                    text = "到达设定时间后，TokiToDo 会进入锁机页面。系统的跨 App 强制力需要额外授权，基础锁机不需要任何权限。",
+                    text = "到达设定时间后，TokiTodo 会进入锁机页面。系统的跨 App 强制力需要额外授权，基础锁机不需要任何权限。",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.padding(vertical = 10.dp),
@@ -1028,9 +1028,9 @@ private fun PermissionDialog(onDismiss: () -> Unit) {
         title = { Text("关于锁机权限") },
         text = {
             Text(
-                "应用内的锁机页面不需要任何权限。若希望离开 TokiToDo 之后仍然被拉回锁机页，" +
+                "应用内的锁机页面不需要任何权限。若希望离开 TokiTodo 之后仍然被拉回锁机页，" +
                     "需要在系统设置里授予「使用情况访问」或「无障碍」权限；要覆盖在其他应用之上，" +
-                    "还需要「悬浮窗」权限。这些权限完全由你决定，TokiToDo 不会上传任何使用数据。",
+                    "还需要「悬浮窗」权限。这些权限完全由你决定，TokiTodo 不会上传任何使用数据。",
             )
         },
         confirmButton = {

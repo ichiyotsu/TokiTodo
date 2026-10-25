@@ -431,7 +431,7 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "TokiToDo 0.1.0 · 无账号、无广告、无网络请求",
+                text = "TokiTodo 0.2.0 · 无账号、无广告、无网络请求",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 6.dp),
@@ -460,7 +460,7 @@ fun ProfileScreen(
     if (helpOpen) {
         AlertDialog(
             onDismissRequest = { helpOpen = false },
-            title = { Text("怎么使用 TokiToDo") },
+            title = { Text("怎么使用 TokiTodo") },
             text = {
                 Text(
                     "· 在「待办」右上角 + 添加要专注的事\n" +
@@ -479,7 +479,7 @@ fun ProfileScreen(
     if (moreOpen) {
         AlertDialog(
             onDismissRequest = { moreOpen = false },
-            title = { Text("关于 TokiToDo") },
+            title = { Text("关于 TokiTodo") },
             text = {
                 Text(
                     "一个安静的自控工具：待办、专注、锁机、统计。没有账号体系，" +

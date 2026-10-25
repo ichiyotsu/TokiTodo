@@ -1,6 +1,6 @@
-# TokiToDo
+# TokiTodo
 
-TokiToDo 是一个安静、本地优先的自控工具，包含**待办、待办集、锁机、统计、我的**五个页面。
+TokiTodo 是一个安静、本地优先的自控工具，包含**待办、待办集、锁机、统计、我的**五个页面。
 
 界面参考 [TokiNote](https://github.com/ichiyotsu/TokiNote) 的设计语言，按 Material Design 3 Expressive 制作：大圆角、悬浮胶囊、实时毛玻璃、柔和纸色和 Canvas 插画。所有数据只保存在本机，应用不申请网络权限。
 

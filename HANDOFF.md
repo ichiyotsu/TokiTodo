@@ -1,4 +1,4 @@
-# TokiToDo — 交接文档
+# TokiTodo — 交接文档
 
 > 更新：2026-10-26 · 版本 0.2.0（versionCode 2）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
@@ -16,7 +16,7 @@
 - 历史：记录编辑 / 心得 / 周纵览 / 周总结 / 补记入口 / 海报（饼图 + 保存相册）。
 - 我的：整页渐变；历史主入口、备份恢复、设置全部可用。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiToDo-0.2.0.apk`（release + R8，debug 签名）。
+- 可安装包：`dist/TokiTodo-0.2.0.apk`（release + R8，debug 签名）。
 - Release：`0.1.0` 与 `0.2.0` 两个版本；`0.2.0` 为最新。
 
 ## 2. 环境
@@ -77,5 +77,5 @@ cd D:\DSH\TokiToDo
 - 定时锁机是应用内 20 秒轮询，不在后台常驻。
 - `TimerViewModel` 用墙钟差推进；进程被杀会丢当前计时。
 - 相机 / 相册：使用 Photo Picker（`PickVisualMedia`），无需存储权限；裁剪输出到 `files/covers`，备份 JSON 不包含图片文件本身。
-- 分享海报保存到 `Pictures/TokiToDo`，需要 Android 10+ 的 MediaStore；模拟器已验证。
+- 分享海报保存到 `Pictures/TokiTodo`，需要 Android 10+ 的 MediaStore；模拟器已验证。
 - 删除 `dist/` 不会影响构建；APK 通过 Release 或 `dist/` 分发。
