@@ -2,8 +2,8 @@
 
 一个安静的自控工具：**待办 · 待办集 · 锁机 · 统计 · 我的**。
 
-> 仓库：<https://github.com/ichiyotsu/TokiTodo>（`v0.2.0` 标签）
-> 0.2.0 APK：`dist/TokiToDo-0.2.0.apk`；旧版安装包在 Releases
+> 仓库：<https://github.com/ichiyotsu/TokiTodo>（`v0.2.1` 标签）
+> 0.2.1 APK：`dist/TokiToDo-0.2.1.apk`；旧版安装包在 Releases
 
 界面参考番茄 ToDo 的功能页，工程骨架与设计语言沿用 [TokiNote](https://github.com/ichiyotsu/TokiNote)，
 视觉按 **Material Design 3 Expressive** 重做：大圆角、非对称卡片、弹簧动效、柔和纸色与 Canvas 插画。
@@ -127,7 +127,7 @@ cd D:\DSH\TokiToDo
 
 - Kotlin 2.4.21 / Compose 1.12.1 / Material3 1.5.0-beta02 / AGP 9.4.1 / Gradle 9.6
 - minSdk 31，compileSdk / targetSdk 37，Java 17
-- 产物：`dist/TokiToDo-0.2.0.apk`、`app/build/outputs/apk/debug/app-debug.apk`
+- 产物：`dist/TokiToDo-0.2.1.apk`、`app/build/outputs/apk/debug/app-debug.apk`
 
 ## 5. 数据与隐私
 

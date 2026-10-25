@@ -101,8 +101,8 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
 
     val hazeState = rememberHazeState()
     val dark = LocalDarkTheme.current
-    val smoke = if (dark) Color.Black.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.04f)
-    val frost = if (dark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.28f)
+    val smoke = if (dark) Color.Black.copy(alpha = 0.26f) else Color.Black.copy(alpha = 0.06f)
+    val frost = if (dark) Color.White.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.36f)
     val fallback = if (dark) {
         Color(0xFF1A211D).copy(alpha = 0.94f)
     } else {

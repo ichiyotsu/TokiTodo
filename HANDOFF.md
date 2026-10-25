@@ -1,6 +1,6 @@
 # TokiToDo — 交接文档
 
-> 更新：2026-10-26 · 版本 0.2.0（versionCode 2）
+> 更新：2026-10-26 · 版本 0.2.1（versionCode 3）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
 > 设计参考：`D:\DSH\TokiNote\project`（只借设计语言与 Compose 结构）
 
@@ -16,8 +16,8 @@
 - 历史：记录编辑 / 心得 / 周纵览 / 周总结 / 补记入口 / 海报（饼图 + 保存相册）。
 - 我的：整页渐变；历史主入口、备份恢复、设置全部可用。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiToDo-0.2.0.apk`（release + R8，debug 签名）。
-- `v0.2.0` 标签已推送；Release 页仍是旧的 0.1.0 安装包，仓库以 0.2.0 源码 + `dist` 包为准。
+- 可安装包：`dist/TokiToDo-0.2.1.apk`（release + R8，debug 签名）。
+- `v0.2.1` 标签已推送；Release 页仍是旧的 0.1.0 安装包，仓库以 0.2.1 源码 + `dist` 包为准。
 
 ## 2. 环境
 
@@ -52,7 +52,7 @@ cd D:\DSH\TokiToDo
 
 ## 4. 设计 / 工程约束
 
-- 底栏是单层：`shadow → clip → 0.86 底色 → Haze → 1dp 描边`；不要再套第二层 Surface。
+- 底栏是单层：`shadow → clip → Haze 实时模糊 → 1dp 描边`；不要加不透明底色，否则会遮掉模糊。
 - 页面不放大标题；只有二级页保留标题（返回箭头 + 标题）。
 - 我的页渐变铺到底，不要再加固定高度 Hero 容器。
 - 插画卡必须保留暗角与文字阴影，浅色封面也要可读。

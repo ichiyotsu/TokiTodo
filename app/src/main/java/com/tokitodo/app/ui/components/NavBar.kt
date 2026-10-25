@@ -92,9 +92,6 @@ fun FloatingNavBar(
                 .padding(horizontal = 24.dp)
                 .shadow(elevation = 16.dp, shape = NavBarShape, clip = false)
                 .clip(NavBarShape)
-                .background(
-                    MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.86f),
-                )
                 .then(glass)
                 .border(
                     width = 1.dp,
