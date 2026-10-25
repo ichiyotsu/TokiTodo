@@ -18,6 +18,6 @@ TokiTodo 是一个安静、本地优先的自控工具，包含**待办、待办
 | --- | --- |
 | ![编辑器](screenshots/10-todo-editor.png) | ![专注历史](screenshots/11-history.png) |
 
-| 分享海报 | 编辑器设置 |
+| 周纵览 | 编辑器设置 |
 | --- | --- |
-| ![分享海报](screenshots/16-share-poster.png) | ![编辑器设置](screenshots/18-editor-settings.png) |
+| ![周纵览](screenshots/17-week-overview.png) | ![编辑器设置](screenshots/18-editor-settings.png) |
