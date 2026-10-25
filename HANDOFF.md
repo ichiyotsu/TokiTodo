@@ -16,6 +16,9 @@
 - 自动化：定时锁机每 20 秒检查一次时段；计时结束按设置播放提示音 / 震动
 - 截图：`screenshots/01–14`（含深色），来自 API 31 模拟器
 - 可安装包：`dist/TokiToDo-0.1.0.apk`（release + R8，debug 签名，约 6.6 MB）
+- GitHub：<https://github.com/ichiyotsu/TokiTodo> · Release `0.1.0` 已附带 APK
+- 推送方式：github.com:443 在本机被阻断，使用 SSH deploy key
+  （`C:\Users\tokisaki\.ssh\tokitodo_ed25519`，只授权本仓库）推送到 `git@github.com:ichiyotsu/TokiTodo.git`
 
 ## 2. 环境
 

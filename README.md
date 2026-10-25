@@ -2,7 +2,10 @@
 
 一个安静的自控工具：**待办 · 待办集 · 锁机 · 统计 · 我的**。
 
-界面参考番茄 ToDo 的功能页结构，工程骨架与设计语言沿用 [TokiNote](../TokiNote/project)，
+> 仓库：<https://github.com/ichiyotsu/TokiTodo>
+> 下载：<https://github.com/ichiyotsu/TokiTodo/releases/latest>（Android 12+）
+
+界面参考番茄 ToDo 的功能页结构，工程骨架与设计语言沿用 [TokiNote](https://github.com/ichiyotsu/TokiNote)，
 视觉全面按 **Material Design 3 Expressive** 重做：大圆角、非对称卡片、弹簧动效、
 柔和纸色与插画封面。所有数据只保存在本机，**不申请网络权限**。
 
