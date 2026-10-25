@@ -1,0 +1,4 @@
+-keepattributes *Annotation*
+-keepattributes Signature,InnerClasses,EnclosingMethod
+-dontwarn org.jetbrains.annotations.**
+-dontwarn org.intellij.lang.annotations.**

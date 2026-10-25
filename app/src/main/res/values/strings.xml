@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TokiToDo</string>
+    <string name="nav_todos">待办</string>
+    <string name="nav_collections">待办集</string>
+    <string name="nav_lock">锁机</string>
+    <string name="nav_stats">统计数据</string>
+    <string name="nav_profile">我的</string>
+    <string name="study_mode">点击开启学霸模式</string>
+    <string name="study_mode_on">学霸模式已开启</string>
+    <string name="start">开始</string>
+    <string name="minutes_short">%1$d 分钟</string>
+</resources>

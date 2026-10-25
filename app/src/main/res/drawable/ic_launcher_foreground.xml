@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- tomato body -->
+    <path
+        android:fillColor="#FFF2EC"
+        android:pathData="M54,32C68.36,32 80,43.64 80,58C80,72.36 68.36,84 54,84C39.64,84 28,72.36 28,58C28,43.64 39.64,32 54,32Z" />
+    <path
+        android:fillColor="#E4573D"
+        android:pathData="M54,34C66.7,34 77,44.3 77,57C77,69.7 66.7,80 54,80C41.3,80 31,69.7 31,57C31,44.3 41.3,34 54,34Z" />
+    <!-- highlight -->
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M45,42C49,39.5 54,38.8 58,40C52.5,40.8 48,44.5 45.8,49.5C44.3,47.2 44.2,44.3 45,42Z" />
+    <!-- leaves -->
+    <path
+        android:fillColor="#6FA287"
+        android:pathData="M54,36C50,30 44,27.5 38,28.5C42.5,33.5 47,36.5 54,36Z" />
+    <path
+        android:fillColor="#8CBE9F"
+        android:pathData="M54,36C58,29.5 64,26.5 70,27.5C65.5,32.5 61,36 54,36Z" />
+    <path
+        android:fillColor="#4F7D65"
+        android:pathData="M53,37L50.5,29.5L56.5,29L58.5,36Z" />
+    <!-- check -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M43,57.5L50.5,65L66,48" />
+</vector>
