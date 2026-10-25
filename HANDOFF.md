@@ -1,6 +1,6 @@
 # TokiToDo — 交接文档
 
-> 更新：2026-10-26 · 版本 0.2.1（versionCode 3）
+> 更新：2026-10-26 · 版本 0.2.0（versionCode 2）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
 > 设计参考：`D:\DSH\TokiNote\project`（只借设计语言与 Compose 结构）
 
@@ -16,8 +16,8 @@
 - 历史：记录编辑 / 心得 / 周纵览 / 周总结 / 补记入口 / 海报（饼图 + 保存相册）。
 - 我的：整页渐变；历史主入口、备份恢复、设置全部可用。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiToDo-0.2.1.apk`（release + R8，debug 签名）。
-- `v0.2.1` 标签已推送；Release 页仍是旧的 0.1.0 安装包，仓库以 0.2.1 源码 + `dist` 包为准。
+- 可安装包：`dist/TokiToDo-0.2.0.apk`（release + R8，debug 签名）。
+- Release：`0.1.0` 与 `0.2.0` 两个版本；`0.2.0` 为最新。
 
 ## 2. 环境
 
