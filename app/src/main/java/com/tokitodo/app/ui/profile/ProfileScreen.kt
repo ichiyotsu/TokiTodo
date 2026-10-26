@@ -501,7 +501,7 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "TokiTodo 0.2.0 · 无账号、无广告 · 仅检查更新时联网",
+                text = "TokiTodo 0.2.1 · 无账号、无广告 · 仅检查更新时联网",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 6.dp),

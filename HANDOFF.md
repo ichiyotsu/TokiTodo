@@ -1,6 +1,6 @@
 # TokiTodo — 交接文档
 
-> 更新：2026-10-26 · 版本 0.2.0（versionCode 2）
+> 更新：2026-10-26 · 版本 0.2.1（versionCode 3）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
 > 设计参考：`D:\DSH\TokiNote\project`（只借设计语言与 Compose 结构）
 
@@ -18,8 +18,8 @@
 - 强制学习：弹窗 + 提升强制性二级页 + 白名单应用选择（策略持久化，系统执行层预留）。
 - 备份：JSON 导入导出；不包含封面/头像二进制文件。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiTodo-0.2.0-dev.apk`（当前代码 release 构建；GitHub Release 的 0.2.0 是较早版本）。
-- Release：`0.1.0` 与 `0.2.0` 两个版本；`0.2.0` 为最新。
+- 可安装包：`dist/TokiTodo-0.2.1.apk`（release + R8，debug 签名）。
+- Release：`0.1.0` / `0.2.0` / `0.2.1`；`0.2.1` 为最新。
 
 ## 2. 环境
 

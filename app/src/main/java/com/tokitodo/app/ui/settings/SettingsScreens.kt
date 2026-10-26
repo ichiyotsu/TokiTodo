@@ -914,7 +914,7 @@ private fun OtherSettings(
         Column(Modifier.padding(18.dp)) {
             SettingTitle("关于", null)
             Spacer(Modifier.height(6.dp))
-            listOf("版本" to "0.2.0", "应用" to "TokiTodo", "网络权限" to "未申请").forEach { (key, value) ->
+            listOf("版本" to "0.2.1", "应用" to "TokiTodo", "网络权限" to "仅更新/WebUI").forEach { (key, value) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
