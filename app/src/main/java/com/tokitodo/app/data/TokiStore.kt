@@ -1,19 +1,21 @@
 package com.tokitodo.app.data
 
 import android.content.Context
+import android.util.Base64
 import com.tokitodo.app.ui.theme.ColorPreset
 import com.tokitodo.app.ui.theme.TodoArt
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 /**
- * 本地存储：SharedPreferences + JSON。所有数据只留在这台设备上，
- * 不申请网络权限，也没有账号体系。
+ * 本地存储：SharedPreferences + JSON。数据留在本机，只有检查更新时联网。
  */
 class TokiStore(context: Context) {
 
     private val prefs = context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
 
     /* ----------------------------- todos ----------------------------- */
 
@@ -41,6 +43,11 @@ class TokiStore(context: Context) {
             habitPeriod = enumOrDefault(json.optString("habitPeriod"), HabitPeriod.Daily),
             habitHours = json.optDouble("habitHours", 0.0).toFloat(),
             coverPath = json.optString("coverPath").takeUnless { it.isBlank() },
+            reminderMinute = if (json.has("reminderMinute")) json.optInt("reminderMinute") else null,
+            whitelistPackages = buildSet {
+                val array = json.optJSONArray("whitelistPackages") ?: JSONArray()
+                for (index in 0 until array.length()) add(array.optString(index))
+            },
         )
     }
 
@@ -66,6 +73,8 @@ class TokiStore(context: Context) {
                     put("habitPeriod", it.habitPeriod.name)
                     put("habitHours", it.habitHours.toDouble())
                     put("coverPath", it.coverPath ?: "")
+                    it.reminderMinute?.let { value -> put("reminderMinute", value) }
+                    put("whitelistPackages", JSONArray(it.whitelistPackages.toList()))
                 },
             )
         }
@@ -252,6 +261,8 @@ class TokiStore(context: Context) {
                 cycleCount = json.optInt("cycleCount", 4).coerceIn(1, 24),
                 cycleInfinite = json.optBoolean("cycleInfinite", true),
                 keepScreenAwake = json.optBoolean("keepScreenAwake", true),
+                clockFont = enumOrDefault(json.optString("clockFont"), ClockFont.Sans),
+                timerBackgroundPath = json.optString("timerBackgroundPath").takeUnless { it.isBlank() },
                 durationPresets = buildList {
                     val array = json.optJSONArray("durationPresets")
                     if (array == null) {
@@ -269,9 +280,12 @@ class TokiStore(context: Context) {
                 defaultTab = json.optString("defaultTab", "Todos"),
                 widgetStyle = enumOrDefault(json.optString("widgetStyle"), WidgetStyle.Forest),
                 desktopAssistant = json.optBoolean("desktopAssistant", false),
+                desktopPairingCode = json.optString("desktopPairingCode", ""),
                 dailyGoalMinutes = json.optInt("dailyGoalMinutes", 120).coerceIn(15, 720),
                 userName = json.optString("userName", "番茄同学"),
                 userEmoji = json.optString("userEmoji", "🍅"),
+                userSignature = json.optString("userSignature", "把注意力留给真正重要的事"),
+                userAvatarPath = json.optString("userAvatarPath").takeUnless { it.isBlank() },
             )
         }.getOrDefault(AppSettings())
     }
@@ -303,6 +317,8 @@ class TokiStore(context: Context) {
             put("cycleCount", settings.cycleCount)
             put("cycleInfinite", settings.cycleInfinite)
             put("keepScreenAwake", settings.keepScreenAwake)
+            put("clockFont", settings.clockFont.name)
+            put("timerBackgroundPath", settings.timerBackgroundPath ?: "")
             put("durationPresets", JSONArray(settings.durationPresets))
             put("lockBlockNotifications", settings.lockBlockNotifications)
             put("lockAllowEmergency", settings.lockAllowEmergency)
@@ -311,9 +327,12 @@ class TokiStore(context: Context) {
             put("defaultTab", settings.defaultTab)
             put("widgetStyle", settings.widgetStyle.name)
             put("desktopAssistant", settings.desktopAssistant)
+            put("desktopPairingCode", settings.desktopPairingCode)
             put("dailyGoalMinutes", settings.dailyGoalMinutes)
             put("userName", settings.userName)
             put("userEmoji", settings.userEmoji)
+            put("userSignature", settings.userSignature)
+            put("userAvatarPath", settings.userAvatarPath ?: "")
         }
         prefs.edit().putString(KEY_SETTINGS, json.toString()).apply()
     }
@@ -363,6 +382,7 @@ class TokiStore(context: Context) {
                             put("habitPeriod", todo.habitPeriod.name)
                             put("habitHours", todo.habitHours.toDouble())
                             put("coverPath", todo.coverPath ?: "")
+                            encodeFile(todo.coverPath)?.let { put("coverData", it) }
                         },
                     )
                 }
@@ -476,10 +496,19 @@ class TokiStore(context: Context) {
                 put("cycleCount", settings.cycleCount)
                 put("cycleInfinite", settings.cycleInfinite)
                 put("keepScreenAwake", settings.keepScreenAwake)
+                put("clockFont", settings.clockFont.name)
+                put("timerBackgroundPath", settings.timerBackgroundPath ?: "")
                 put("durationPresets", JSONArray(settings.durationPresets))
                 put("reduceMotion", settings.reduceMotion)
                 put("userName", settings.userName)
                 put("userEmoji", settings.userEmoji)
+                put("userSignature", settings.userSignature)
+                put("userAvatarPath", settings.userAvatarPath ?: "")
+                encodeFile(settings.userAvatarPath)?.let { put("avatarData", it) }
+                encodeFile(settings.timerBackgroundPath)?.let { put("timerBackgroundData", it) }
+                put("desktopAssistant", settings.desktopAssistant)
+                put("desktopPairingCode", settings.desktopPairingCode)
+                put("widgetStyle", settings.widgetStyle.name)
             },
         )
         return root.toString(2)
@@ -503,10 +532,17 @@ class TokiStore(context: Context) {
         val array = JSONArray()
         builder(array)
         prefs.edit().putString(key, array.toString()).apply()
+        runCatching { com.tokitodo.app.widget.TokiWidgetProvider.refresh(appContext) }
     }
 
     private inline fun <reified T : Enum<T>> enumOrDefault(name: String?, fallback: T): T =
         runCatching { enumValueOf<T>(name.orEmpty()) }.getOrDefault(fallback)
+
+    private fun encodeFile(path: String?): String? = runCatching {
+        path?.let { File(it).takeIf { file -> file.isFile && file.length() < 2_000_000 } }
+            ?.readBytes()
+            ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+    }.getOrNull()
 
     private companion object {
         const val PREFS_NAME = "tokitodo_prefs"

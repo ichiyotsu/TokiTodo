@@ -30,6 +30,11 @@ sealed interface Dest {
     data object ForceEnhancements : Dest
     data object Whitelist : Dest
     data object LockSettings : Dest
+    data class TodoStats(val todoId: String, val title: String) : Dest
+    data class CollectionStats(val collectionId: String, val title: String) : Dest
+    data class ScopedHistory(val title: String, val todoId: String? = null, val collectionId: String? = null) : Dest
+    data class TodoWhitelist(val todoId: String, val title: String) : Dest
+    data object About : Dest
 
     /** 返回栈深度，用于决定转场方向。 */
     fun depth(): Int = when (this) {

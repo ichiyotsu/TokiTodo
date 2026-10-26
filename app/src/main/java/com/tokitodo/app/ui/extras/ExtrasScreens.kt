@@ -57,7 +57,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -573,6 +576,77 @@ private fun AddCountdownSheet(
 
 /* ----------------------------- wish wall ----------------------------- */
 
+@Composable
+private fun WishSticky(
+    wish: Wish,
+    index: Int,
+    modifier: Modifier = Modifier,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val dark = LocalDarkTheme.current
+    val papers = if (dark) {
+        listOf(Color(0xFF4A4530), Color(0xFF4A3038), Color(0xFF304238), Color(0xFF303D4A))
+    } else {
+        listOf(Color(0xFFFFF3B8), Color(0xFFFFD9E2), Color(0xFFD8F0D8), Color(0xFFDCEBFF))
+    }
+    val paper = papers[index % papers.size]
+    val angle = if (index % 2 == 0) -2.2f else 2.0f
+    Box(
+        modifier = modifier
+            .graphicsLayer { rotationZ = angle }
+            .clip(RoundedCornerShape(5.dp))
+            .background(paper)
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onToggle,
+                onLongClick = onDelete,
+            )
+            .padding(horizontal = 14.dp, vertical = 16.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .width(42.dp)
+                .height(9.dp)
+                .background(Color.White.copy(alpha = 0.38f)),
+        )
+        Column {
+            Text(
+                text = wish.text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (dark) Color(0xFFF1E7D6) else Color(0xFF3C3328),
+                textDecoration = if (wish.done) TextDecoration.LineThrough else null,
+                modifier = Modifier.padding(top = 5.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (wish.done) {
+                        "已经实现"
+                    } else {
+                        formatDate(
+                            Instant.ofEpochMilli(wish.createdAt)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate(),
+                        )
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (dark) Color(0xFFCBBFA9) else Color(0xFF6B5C4A),
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = if (wish.done) "已完成" else "标记完成",
+                    tint = if (wish.done) Color(0xFF356859) else Color(0xFF6B5C4A).copy(alpha = 0.45f),
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishWallScreen(
@@ -589,7 +663,7 @@ fun WishWallScreen(
     var text by remember { mutableStateOf("") }
 
     DetailScaffold(
-        title = "自习室 · 许愿墙",
+        title = "许愿墙",
         contentPadding = contentPadding,
         onBack = onBack,
         actions = {
@@ -653,65 +727,30 @@ fun WishWallScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp),
             )
-            wishes.forEachIndexed { index, wish ->
+            wishes.chunked(2).forEachIndexed { rowIndex, pair ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(collectionTint(index, dark))
-                        .clickable { pendingDelete = wish }
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    Surface(
-                        onClick = { onToggle(wish.id) },
-                        shape = CircleShape,
-                        color = if (wish.done) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.8f)
-                        },
-                        contentColor = if (wish.done) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.size(30.dp),
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Rounded.Check,
-                                contentDescription = "标记完成",
-                                modifier = Modifier.size(17.dp),
-                            )
-                        }
+                    pair.forEachIndexed { column, wish ->
+                        val index = rowIndex * 2 + column
+                        WishSticky(
+                            wish = wish,
+                            index = index,
+                            modifier = Modifier.weight(1f),
+                            onToggle = { onToggle(wish.id) },
+                            onDelete = { pendingDelete = wish },
+                        )
                     }
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = wish.text,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textDecoration = if (wish.done) TextDecoration.LineThrough else null,
-                        )
-                        Text(
-                            text = if (wish.done) {
-                                "已经实现"
-                            } else {
-                                "写于 " + formatDate(
-                                    Instant.ofEpochMilli(wish.createdAt)
-                                        .atZone(java.time.ZoneId.systemDefault())
-                                        .toLocalDate(),
-                                )
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    if (pair.size == 1) {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
+                Spacer(Modifier.height(14.dp))
             }
             Text(
-                text = "点击卡片可以删除。",
+                text = "点一下标记完成，长按可以撕掉这张便签。",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
                 modifier = Modifier.padding(start = 4.dp),

@@ -27,9 +27,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Spa
 import androidx.compose.material3.AlertDialog
@@ -87,16 +89,14 @@ fun LockScreen(
     schedules: List<LockSchedule>,
     settings: AppSettings,
     contentPadding: PaddingValues,
-    onStartNap: (Int) -> Unit,
     onStartLock: (Int) -> Unit,
     onAddSchedule: (String, Int, Int, Set<Int>) -> Unit,
     onToggleSchedule: (String, Boolean) -> Unit,
     onDeleteSchedule: (String) -> Unit,
     onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
+    onOpenWhitelist: () -> Unit,
 ) {
-    var napOpen by remember { mutableStateOf(false) }
     var lockOpen by remember { mutableStateOf(false) }
-    var scheduleOpen by remember { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var permissionOpen by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -118,9 +118,14 @@ fun LockScreen(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 CircleAction(
-                    icon = Icons.Outlined.Bedtime,
-                    contentDescription = "小憩",
-                    onClick = { napOpen = true },
+                    icon = Icons.Rounded.Lock,
+                    contentDescription = "开始锁机",
+                    onClick = { lockOpen = true },
+                )
+                CircleAction(
+                    icon = Icons.Rounded.Apps,
+                    contentDescription = "锁机白名单",
+                    onClick = onOpenWhitelist,
                 )
                 Box {
                     CircleAction(
@@ -144,11 +149,11 @@ fun LockScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("添加自定义锁机时段") },
+                            text = { Text("自定义锁机时间段") },
                             onClick = {
                                 menuOpen = false
-                                scheduleOpen = true
                             },
+                            enabled = false,
                         )
                     }
                 }
@@ -156,11 +161,9 @@ fun LockScreen(
         )
 
         Spacer(Modifier.height(14.dp))
-        NapCard(onClick = { napOpen = true })
-        Spacer(Modifier.height(12.dp))
         QuickLockCard(onClick = { lockOpen = true })
         Spacer(Modifier.height(12.dp))
-        QuickScheduleCard(onClick = { scheduleOpen = true })
+        ScheduleUnavailableCard()
 
         Spacer(Modifier.height(12.dp))
         Row(
@@ -178,61 +181,6 @@ fun LockScreen(
             )
         }
 
-        if (schedules.isEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            EmptyState(
-                icon = Icons.Outlined.MailOutline,
-                title = "当前没有设置定时锁机",
-                hint = "锁机是比学霸模式更严格的自控功能",
-                actionLabel = "添加一个时间段",
-                onAction = { scheduleOpen = true },
-                tint = MaterialTheme.colorScheme.tertiary,
-                hintColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-            )
-        } else {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Spacer(Modifier.height(22.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "定时锁机",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "${schedules.count { it.enabled }} 个已启用",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                schedules.forEach { schedule ->
-                    ScheduleCard(
-                        schedule = schedule,
-                        onToggle = { onToggleSchedule(schedule.id, it) },
-                        onDelete = { onDeleteSchedule(schedule.id) },
-                    )
-                }
-                Text(
-                    text = "到达设定时间后，TokiTodo 会进入锁机页面。系统的跨 App 强制力需要额外授权，基础锁机不需要任何权限。",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(vertical = 10.dp),
-                )
-            }
-        }
-    }
-
-    if (napOpen) {
-        NapSheet(
-            onDismiss = { napOpen = false },
-            onStart = { minutes ->
-                napOpen = false
-                onStartNap(minutes)
-            },
-        )
     }
     if (lockOpen) {
         QuickLockSheet(
@@ -240,15 +188,6 @@ fun LockScreen(
             onStart = { minutes ->
                 lockOpen = false
                 onStartLock(minutes)
-            },
-        )
-    }
-    if (scheduleOpen) {
-        ScheduleSheet(
-            onDismiss = { scheduleOpen = false },
-            onSave = { label, start, end, days ->
-                onAddSchedule(label, start, end, days)
-                scheduleOpen = false
             },
         )
     }
@@ -397,6 +336,47 @@ private fun QuickLockCard(onClick: () -> Unit) {
                     color = Color.White,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleUnavailableCard() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .clip(LockCardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(horizontal = 18.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(21.dp),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "自定义锁机时间段",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "暂不支持该功能",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -688,16 +668,52 @@ private fun QuickLockSheet(onDismiss: () -> Unit, onStart: (Int) -> Unit) {
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "锁机期间会停留在锁机页面。放弃需要长按确认，退出后本次锁机不计入专注统计。",
+            text = "锁机期间会停留在锁机页面。系统级顶层锁机需要悬浮窗授权，当前版本先使用应用内全屏锁机。时长可设置为 2–60 分钟。",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(20.dp))
         DurationRow(
-            options = listOf(15, 30, 45, 60, 90),
+            options = listOf(5, 10, 15, 20, 30, 45, 60),
             value = minutes,
             onSelect = { minutes = it },
         )
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                onClick = { minutes = (minutes - 1).coerceAtLeast(2) },
+                enabled = minutes > 2,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Remove, contentDescription = "减少", modifier = Modifier.size(17.dp))
+                }
+            }
+            Text(
+                text = "$minutes 分钟",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.width(130.dp),
+            )
+            Surface(
+                onClick = { minutes = (minutes + 1).coerceAtMost(60) },
+                enabled = minutes < 60,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Add, contentDescription = "增加", modifier = Modifier.size(17.dp))
+                }
+            }
+        }
         Spacer(Modifier.height(18.dp))
         Row(
             modifier = Modifier

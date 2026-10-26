@@ -359,6 +359,43 @@ fun WhitelistScreen(
     onBack: () -> Unit,
     onToggle: (String) -> Unit,
 ) {
+    WhitelistContent(
+        selectedPackages = settings.whitelistPackages,
+        title = "全局白名单",
+        hint = "白名单里的应用在强制学习、锁机和拦截通知时会被放行。例如词典、网课或笔记应用。",
+        contentPadding = contentPadding,
+        onBack = onBack,
+        onToggle = onToggle,
+    )
+}
+
+@Composable
+fun TodoWhitelistScreen(
+    selectedPackages: Set<String>,
+    title: String,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onToggle: (String) -> Unit,
+) {
+    WhitelistContent(
+        selectedPackages = selectedPackages,
+        title = title,
+        hint = "这件待办专注期间，白名单里的应用会被放行；它独立于全局白名单。",
+        contentPadding = contentPadding,
+        onBack = onBack,
+        onToggle = onToggle,
+    )
+}
+
+@Composable
+private fun WhitelistContent(
+    selectedPackages: Set<String>,
+    title: String,
+    hint: String,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onToggle: (String) -> Unit,
+) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var apps by remember { mutableStateOf<List<InstalledApp>>(emptyList()) }
@@ -386,12 +423,12 @@ fun WhitelistScreen(
     }
 
     DetailScaffold(
-        title = "全局白名单",
+        title = title,
         contentPadding = contentPadding,
         onBack = onBack,
     ) {
         Text(
-            text = "白名单里的应用在强制学习、锁机和拦截通知时会被放行。例如词典、网课或笔记应用。",
+            text = hint,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -405,7 +442,7 @@ fun WhitelistScreen(
             singleLine = true,
         )
         Text(
-            text = "已选择 ${settings.whitelistPackages.size} 个应用",
+            text = "已选择 ${selectedPackages.size} 个应用",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(start = 4.dp),
@@ -428,7 +465,7 @@ fun WhitelistScreen(
             ) {
                 LazyColumn(modifier = Modifier.fillMaxWidth().height(420.dp)) {
                     items(filtered, key = { it.packageName }) { app ->
-                        val checked = settings.whitelistPackages.contains(app.packageName)
+                        val checked = selectedPackages.contains(app.packageName)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

@@ -1,6 +1,12 @@
 package com.tokitodo.app.ui.profile
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +33,7 @@ import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Palette
@@ -55,6 +62,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +73,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,6 +90,7 @@ import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.SectionCardShape
 import com.tokitodo.app.ui.theme.SheetShape
+import java.io.File
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,11 +105,22 @@ fun ProfileScreen(
     onOpenCountdown: () -> Unit,
     onOpenWishWall: () -> Unit,
     onOpenVip: () -> Unit,
+    onOpenAbout: () -> Unit,
     onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
 ) {
     var editOpen by remember { mutableStateOf(false) }
     var helpOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val avatarPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            copyAvatar(context, uri)?.let { path ->
+                onUpdateSettings { it.copy(userAvatarPath = path) }
+            }
+        }
+    }
     val today = LocalDate.now()
     val activeDays = Stats.activeDays(sessions)
     val streak = Stats.streak(sessions, today)
@@ -147,14 +170,43 @@ fun ProfileScreen(
                 Spacer(Modifier.height(18.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(contentAlignment = Alignment.Center) {
+                        val avatarBitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                            initialValue = null,
+                            settings.userAvatarPath,
+                        ) {
+                            value = settings.userAvatarPath
+                                ?.takeIf { File(it).exists() }
+                                ?.let { path ->
+                                    runCatching {
+                                        BitmapFactory.decodeFile(path)?.asImageBitmap()
+                                    }.getOrNull()
+                                }
+                        }
                         Box(
                             modifier = Modifier
                                 .size(88.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.92f)),
+                                .background(Color.White.copy(alpha = 0.92f))
+                                .clickable {
+                                    avatarPicker.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                        ),
+                                    )
+                                },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(text = settings.userEmoji, fontSize = 42.sp)
+                            val bitmap = avatarBitmap
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap,
+                                    contentDescription = "个人头像",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Text(text = settings.userEmoji, fontSize = 42.sp)
+                            }
                         }
                         Box(
                             modifier = Modifier
@@ -207,8 +259,8 @@ fun ProfileScreen(
                         }
                         Spacer(Modifier.height(3.dp))
                         Text(
-                            text = "数据只留在这台设备上 · 点击头像编辑",
-                            style = MaterialTheme.typography.labelSmall.copy(
+                            text = settings.userSignature.ifBlank { "写一句自己的签名" },
+                            style = MaterialTheme.typography.bodySmall.copy(
                                 shadow = Shadow(
                                     color = Color(0xFF4A1F2C).copy(alpha = 0.45f),
                                     offset = Offset(0f, 1f),
@@ -216,6 +268,8 @@ fun ProfileScreen(
                                 ),
                             ),
                             color = Color.White.copy(alpha = 0.95f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -259,7 +313,7 @@ fun ProfileScreen(
                     QuickDivider()
                     QuickEntry(
                         icon = Icons.Rounded.WavingHand,
-                        label = "自习室 | 许愿墙",
+                        label = "许愿墙",
                         tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
                         onClick = onOpenWishWall,
@@ -370,6 +424,7 @@ fun ProfileScreen(
                     title = "专注计时核心设置",
                     subtitle = "铃声震动 | 休息时长等",
                     tint = MaterialTheme.colorScheme.primary,
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.Timer) },
                 )
                 SettingsDivider()
@@ -378,6 +433,7 @@ fun ProfileScreen(
                     title = "海报背景和外观",
                     subtitle = "待办和专注背景 | 深色模式",
                     tint = Color(0xFFF87171),
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.Appearance) },
                 )
                 SettingsDivider()
@@ -386,6 +442,7 @@ fun ProfileScreen(
                     title = "自定义底栏模块",
                     subtitle = "选择最喜欢的功能放在主界面",
                     tint = Color(0xFF38BDF8),
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.NavBar) },
                 )
                 SettingsDivider()
@@ -394,6 +451,7 @@ fun ProfileScreen(
                     title = "主题颜色搭配",
                     subtitle = "主题色 | 专注分布图配色",
                     tint = Color(0xFFFCA5A5),
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.Theme) },
                     trailing = {
                         Box(
@@ -410,6 +468,7 @@ fun ProfileScreen(
                     title = "桌面小组件选项",
                     subtitle = "小组件背景图等",
                     tint = Color(0xFFFBBF24),
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.Widget) },
                 )
                 SettingsDivider()
@@ -418,6 +477,7 @@ fun ProfileScreen(
                     title = "连接电脑端专注助手",
                     subtitle = "可设置连接电脑端计时工具",
                     tint = Color(0xFF60A5FA),
+                    iconBackground = false,
                     onClick = { onOpenPage(SettingsPage.Desktop) },
                 )
                 SettingsDivider()
@@ -427,11 +487,21 @@ fun ProfileScreen(
                     subtitle = "清除数据设置等",
                     tint = Color(0xFF34D399),
                     onClick = { onOpenPage(SettingsPage.Other) },
+                    iconBackground = false,
+                )
+                SettingsDivider()
+                SettingRow(
+                    icon = Icons.Rounded.Info,
+                    title = "关于 TokiTodo",
+                    subtitle = "版本信息 | 软件更新",
+                    tint = MaterialTheme.colorScheme.primary,
+                    onClick = onOpenAbout,
+                    iconBackground = false,
                 )
             }
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "TokiTodo 0.2.0 · 无账号、无广告、无网络请求",
+                text = "TokiTodo 0.2.0 · 无账号、无广告 · 仅检查更新时联网",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 6.dp),
@@ -450,8 +520,10 @@ fun ProfileScreen(
         EditProfileSheet(
             settings = settings,
             onDismiss = { editOpen = false },
-            onSave = { name, emoji ->
-                onUpdateSettings { it.copy(userName = name, userEmoji = emoji) }
+            onSave = { name, signature, emoji ->
+                onUpdateSettings {
+                    it.copy(userName = name, userSignature = signature, userEmoji = emoji)
+                }
                 editOpen = false
             },
         )
@@ -483,7 +555,7 @@ fun ProfileScreen(
             text = {
                 Text(
                     "一个安静的自控工具：待办、专注、锁机、统计。没有账号体系，" +
-                        "不申请网络权限，不会上传你的待办和专注记录。",
+                        "只有检查软件更新时访问 GitHub；不会上传你的待办和专注记录。",
                 )
             },
             confirmButton = {
@@ -492,6 +564,15 @@ fun ProfileScreen(
         )
     }
 }
+
+private fun copyAvatar(context: android.content.Context, uri: Uri): String? = runCatching {
+    val dir = File(context.filesDir, "profile").apply { mkdirs() }
+    val file = File(dir, "avatar.jpg")
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        file.outputStream().use { output -> input.copyTo(output) }
+    }
+    file.takeIf { it.length() > 0 }?.absolutePath
+}.getOrNull()
 
 @Composable
 private fun ProfileHero() {
@@ -599,19 +680,20 @@ private fun HeroStat(text: String, icon: androidx.compose.ui.graphics.vector.Ima
             imageVector = icon,
             contentDescription = null,
             tint = Color(0xFFFFF1E4).copy(alpha = 0.9f),
-            modifier = Modifier.size(13.dp),
+            modifier = Modifier.size(15.dp),
         )
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(5.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall.copy(
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.SemiBold,
                 shadow = Shadow(
                     color = Color(0xFF3B1A24).copy(alpha = 0.4f),
                     offset = Offset(0f, 1f),
                     blurRadius = 5f,
                 ),
             ),
-            color = Color.White.copy(alpha = 0.95f),
+            color = Color.White,
         )
     }
 }
@@ -630,15 +712,7 @@ private fun QuickEntry(
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(tint.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-        }
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
         Spacer(Modifier.height(7.dp))
         Text(
             text = label,
@@ -672,10 +746,11 @@ private fun SettingsDivider() {
 private fun EditProfileSheet(
     settings: AppSettings,
     onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit,
+    onSave: (String, String, String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(settings.userName) }
+    var signature by remember { mutableStateOf(settings.userSignature) }
     var emoji by remember { mutableStateOf(settings.userEmoji) }
     val emojis = listOf("🍅", "🌿", "🌙", "☕", "🐈", "📚", "✨", "🪴")
 
@@ -729,13 +804,28 @@ private fun EditProfileSheet(
                 value = name,
                 onValueChange = { name = it.take(16) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("昵称") },
+                label = { Text("ID / 昵称") },
+                shape = RoundedCornerShape(18.dp),
+                singleLine = true,
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = signature,
+                onValueChange = { signature = it.take(40) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("个人签名") },
                 shape = RoundedCornerShape(18.dp),
                 singleLine = true,
             )
             Spacer(Modifier.height(20.dp))
             Button(
-                onClick = { onSave(name.trim().ifBlank { "番茄同学" }, emoji) },
+                onClick = {
+                    onSave(
+                        name.trim().ifBlank { "番茄同学" },
+                        signature.trim(),
+                        emoji,
+                    )
+                },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
@@ -746,7 +836,7 @@ private fun EditProfileSheet(
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "头像使用 emoji，不读取相册，也不需要存储权限。",
+                text = "头像可从相册选择，图片只保存在本机；不选择时使用 emoji。",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.CenterHorizontally),

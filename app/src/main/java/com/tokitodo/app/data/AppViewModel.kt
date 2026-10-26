@@ -1,10 +1,12 @@
 package com.tokitodo.app.data
 
 import android.app.Application
+import android.util.Base64
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tokitodo.app.ui.theme.ColorPreset
 import com.tokitodo.app.ui.theme.TodoArt
+import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +80,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateTodo(todo: Todo) {
         _todos.update { list -> list.map { if (it.id == todo.id) todo else it } }
+        persistTodos()
+    }
+
+    fun toggleTodoWhitelist(todoId: String, packageName: String) {
+        _todos.update { list ->
+            list.map { todo ->
+                if (todo.id == todoId) {
+                    val next = todo.whitelistPackages.toMutableSet()
+                    if (!next.add(packageName)) next.remove(packageName)
+                    todo.copy(whitelistPackages = next)
+                } else {
+                    todo
+                }
+            }
+        }
         persistTodos()
     }
 
@@ -373,7 +390,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             HabitPeriod.valueOf(json.optString("habitPeriod"))
                         }.getOrDefault(HabitPeriod.Daily),
                         habitHours = json.optDouble("habitHours", 0.0).toFloat(),
-                        coverPath = json.optString("coverPath").takeUnless { it.isBlank() },
+                        coverPath = restoreImage(
+                            json.optString("coverData"),
+                            "covers",
+                            "restored_${UUID.randomUUID()}.jpg",
+                        ) ?: json.optString("coverPath").takeUnless { it.isBlank() },
+                        reminderMinute = if (json.has("reminderMinute")) {
+                            json.optInt("reminderMinute")
+                        } else {
+                            null
+                        },
+                        whitelistPackages = buildSet {
+                            val values = json.optJSONArray("whitelistPackages") ?: JSONArray()
+                            for (index in 0 until values.length()) add(values.optString(index))
+                        },
                     ),
                 )
             }
@@ -520,6 +550,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     cycleCount = json.optInt("cycleCount", it.cycleCount).coerceIn(1, 24),
                     cycleInfinite = json.optBoolean("cycleInfinite", it.cycleInfinite),
                     keepScreenAwake = json.optBoolean("keepScreenAwake", it.keepScreenAwake),
+                    clockFont = runCatching {
+                        ClockFont.valueOf(json.optString("clockFont"))
+                    }.getOrDefault(it.clockFont),
+                    timerBackgroundPath = restoreImage(
+                        json.optString("timerBackgroundData"),
+                        "timer",
+                        "restored_${UUID.randomUUID()}.jpg",
+                    ) ?: json.optString("timerBackgroundPath")
+                        .takeUnless { value -> value.isBlank() } ?: it.timerBackgroundPath,
                     durationPresets = buildList {
                         val values = json.optJSONArray("durationPresets")
                         if (values == null) {
@@ -531,8 +570,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     },
                     reduceMotion = json.optBoolean("reduceMotion", it.reduceMotion),
+                    desktopAssistant = json.optBoolean("desktopAssistant", it.desktopAssistant),
+                    desktopPairingCode = json.optString("desktopPairingCode", it.desktopPairingCode),
+                    widgetStyle = runCatching {
+                        com.tokitodo.app.data.WidgetStyle.valueOf(json.optString("widgetStyle"))
+                    }.getOrDefault(it.widgetStyle),
                     userName = json.optString("userName", it.userName),
                     userEmoji = json.optString("userEmoji", it.userEmoji),
+                    userSignature = json.optString("userSignature", it.userSignature),
+                    userAvatarPath = restoreImage(
+                        json.optString("avatarData"),
+                        "profile",
+                        "avatar_restored_${UUID.randomUUID()}.jpg",
+                    ) ?: json.optString("userAvatarPath")
+                        .takeUnless { value -> value.isBlank() } ?: it.userAvatarPath,
                 )
             }
         }
@@ -564,6 +615,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun persistCountdowns() = viewModelScope.launch {
         store.saveCountdowns(_countdowns.value)
+    }
+
+    private fun restoreImage(data: String, dirName: String, fileName: String): String? {
+        if (data.isBlank()) return null
+        return runCatching {
+            val dir = File(getApplication<Application>().filesDir, dirName).apply { mkdirs() }
+            val file = File(dir, fileName)
+            file.writeBytes(Base64.decode(data, Base64.NO_WRAP))
+            file.absolutePath
+        }.getOrNull()
     }
 
     /* ----------------------------- seed ----------------------------- */

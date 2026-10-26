@@ -297,6 +297,7 @@ fun SettingRow(
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     showChevron: Boolean = true,
+    iconBackground: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -321,7 +322,13 @@ fun SettingRow(
             modifier = Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(13.dp))
-                .background(tint.copy(alpha = 0.16f)),
+                .then(
+                    if (iconBackground) {
+                        Modifier.background(tint.copy(alpha = 0.16f))
+                    } else {
+                        Modifier
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

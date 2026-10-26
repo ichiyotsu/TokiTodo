@@ -165,6 +165,73 @@ fun FocusBarChart(
     }
 }
 
+/** 单月 / 年度折线图：横轴日期或月份，纵轴分钟数。 */
+@Composable
+fun LineChart(
+    values: List<Int>,
+    labels: List<String>,
+    modifier: Modifier = Modifier,
+    height: Dp = 156.dp,
+    accent: Color = MaterialTheme.colorScheme.primary,
+) {
+    if (values.isEmpty()) return
+    val maxValue = max(values.maxOrNull() ?: 0, 1)
+    val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    Column(modifier) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height),
+        ) {
+            val w = size.width
+            val h = size.height
+            val top = 14.dp.toPx()
+            val bottom = h - 10.dp.toPx()
+            val plotHeight = bottom - top
+            for (i in 0..2) {
+                val y = top + plotHeight * i / 2f
+                drawLine(
+                    color = gridColor.copy(alpha = if (i == 2) 0.75f else 0.4f),
+                    start = Offset(0f, y),
+                    end = Offset(w, y),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            }
+            val step = if (values.size <= 1) w else w / (values.size - 1)
+            val points = values.mapIndexed { index, value ->
+                Offset(
+                    x = step * index,
+                    y = bottom - plotHeight * (value.toFloat() / maxValue),
+                )
+            }
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(points.first().x, points.first().y)
+                points.drop(1).forEach { lineTo(it.x, it.y) }
+            }
+            drawPath(
+                path = path,
+                brush = Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.55f))),
+                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+            )
+            points.forEach { point ->
+                drawCircle(color = accent, radius = 2.4.dp.toPx(), center = point)
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            labels.forEach { label ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
 /** 四时段水平条：凌晨 / 上午 / 下午 / 夜晚。 */
 @Composable
 fun TimeOfDayBars(

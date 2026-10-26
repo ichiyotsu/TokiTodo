@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Edit
@@ -84,6 +85,7 @@ fun CollectionsScreen(
     onDeleteCollection: (String) -> Unit,
     onStartTodo: (Todo) -> Unit,
     onStartFreeFocus: (Int) -> Unit,
+    onOpenStats: (TodoCollection) -> Unit,
 ) {
     var showCreate by remember { mutableStateOf(false) }
     var quickOpen by remember { mutableStateOf(false) }
@@ -168,6 +170,7 @@ fun CollectionsScreen(
                         },
                         onEdit = { editing = collection },
                         onStartTodo = onStartTodo,
+                        onOpenStats = { onOpenStats(collection) },
                     )
                 }
                 item {
@@ -314,6 +317,7 @@ private fun CollectionCard(
     onToggleExpand: () -> Unit,
     onEdit: () -> Unit,
     onStartTodo: (Todo) -> Unit,
+    onOpenStats: () -> Unit,
 ) {
     val dark = LocalDarkTheme.current
     val tint = collectionTint(collection.tintIndex, dark)
@@ -355,6 +359,14 @@ private fun CollectionCard(
                         )
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("查看集合统计") },
+                            leadingIcon = { Icon(Icons.Rounded.BarChart, null, Modifier.size(19.dp)) },
+                            onClick = {
+                                menuOpen = false
+                                onOpenStats()
+                            },
+                        )
                         DropdownMenuItem(
                             text = { Text("重命名 / 改颜色") },
                             leadingIcon = { Icon(Icons.Rounded.Edit, null, Modifier.size(19.dp)) },

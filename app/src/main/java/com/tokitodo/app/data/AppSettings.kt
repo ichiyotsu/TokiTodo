@@ -4,6 +4,14 @@ import com.tokitodo.app.ui.theme.ColorPreset
 
 enum class ThemeMode { System, Light, Dark }
 
+/** 计时页时钟字体。 */
+enum class ClockFont(val label: String) {
+    Sans("默认"),
+    Serif("衬线"),
+    Mono("等宽"),
+    Digital("时钟"),
+}
+
 /** 桌面小组件的几种背景。 */
 enum class WidgetStyle(val label: String) {
     Forest("森林晨雾"),
@@ -45,6 +53,10 @@ data class AppSettings(
     val cycleInfinite: Boolean = true,
     /** 计时页屏幕常亮。 */
     val keepScreenAwake: Boolean = true,
+    /** 计时页时钟字体。 */
+    val clockFont: ClockFont = ClockFont.Sans,
+    /** 计时页自定义背景图，保存在应用私有目录。 */
+    val timerBackgroundPath: String? = null,
     /** 待办编辑器的时长预设，可长按修改。 */
     val durationPresets: List<Int> = listOf(5, 10, 15, 25, 45, 60, 90),
     /** 锁机页的强制性选项。 */
@@ -57,7 +69,10 @@ data class AppSettings(
     val defaultTab: String = "Todos",
     val widgetStyle: WidgetStyle = WidgetStyle.Forest,
     val desktopAssistant: Boolean = false,
+    val desktopPairingCode: String = "",
     val dailyGoalMinutes: Int = 120,
     val userName: String = "番茄同学",
     val userEmoji: String = "🍅",
+    val userSignature: String = "把注意力留给真正重要的事",
+    val userAvatarPath: String? = null,
 )

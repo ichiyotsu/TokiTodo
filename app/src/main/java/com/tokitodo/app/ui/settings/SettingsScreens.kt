@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tokitodo.app.data.AppSettings
+import com.tokitodo.app.data.WebUiServer
 import com.tokitodo.app.data.ThemeMode
 import com.tokitodo.app.data.WidgetStyle
 import com.tokitodo.app.ui.SettingsPage
@@ -105,7 +106,7 @@ fun SettingsDetailScreen(
             SettingsPage.NavBar -> NavBarSettings(settings, onUpdate)
             SettingsPage.Theme -> ThemeSettings(settings, onUpdate)
             SettingsPage.Widget -> WidgetSettings(settings, onUpdate)
-            SettingsPage.Desktop -> DesktopSettings(settings)
+            SettingsPage.Desktop -> DesktopSettings(settings, onUpdate)
             SettingsPage.Other -> OtherSettings(
                 settings = settings,
                 onClearSessions = onClearSessions,
@@ -541,7 +542,7 @@ private fun WidgetSettings(
             }
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "桌面小组件的系统入口会在后续版本接入。现在选择的样式会保存在本地，不会影响专注计时。",
+                text = "桌面长按空白处 → 小组件 → 找到 TokiTodo，即可添加。小组件显示今日专注、连续天数与下一件待办。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -620,11 +621,12 @@ private fun WidgetPreview(style: WidgetStyle) {
 /* ----------------------------- desktop ----------------------------- */
 
 @Composable
-private fun DesktopSettings(settings: AppSettings) {
+private fun DesktopSettings(
+    settings: AppSettings,
+    onUpdate: ((AppSettings) -> AppSettings) -> Unit,
+) {
     val context = LocalContext.current
-    val pairingCode = remember(settings.desktopAssistant) {
-        (100000..999999).random().toString()
-    }
+    val pairingCode = settings.desktopPairingCode.ifBlank { "------" }
     SectionCard {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -647,6 +649,50 @@ private fun DesktopSettings(settings: AppSettings) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .clickable {
+                        onUpdate { it.copy(desktopAssistant = !it.desktopAssistant) }
+                    }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "开启局域网 WebUI",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = if (settings.desktopAssistant) "运行中" else "关闭",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (settings.desktopAssistant) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+                Switch(
+                    checked = settings.desktopAssistant,
+                    onCheckedChange = { value ->
+                        onUpdate { it.copy(desktopAssistant = value) }
+                    },
+                )
+            }
+            if (settings.desktopAssistant) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "http://${WebUiServer.localAddress()}:8080",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier
@@ -673,11 +719,15 @@ private fun DesktopSettings(settings: AppSettings) {
                 }
                 Surface(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "TokiTodo 配对码：$pairingCode")
-                        }
-                        context.startActivity(Intent.createChooser(intent, "发送配对码"))
+                        val clipboard = context.getSystemService(
+                            android.content.ClipboardManager::class.java,
+                        )
+                        clipboard?.setPrimaryClip(
+                            android.content.ClipData.newPlainText(
+                                "TokiTodo WebUI",
+                                "http://${WebUiServer.localAddress()}:8080  配对码：$pairingCode",
+                            ),
+                        )
                     },
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -698,9 +748,9 @@ private fun DesktopSettings(settings: AppSettings) {
             }
             Spacer(Modifier.height(16.dp))
             listOf(
-                "在电脑浏览器打开 tokitodo.local（需与手机同一网络）",
-                "输入上面的六位配对码",
-                "电脑端会显示倒计时，但专注记录只写回手机",
+                "在电脑浏览器打开上面的 http:// 地址（需与手机同一 WiFi）",
+                "输入六位配对码",
+                "电脑端会显示今日专注、累计数据和待办；刷新即可获取最新数据",
             ).forEachIndexed { index, text ->
                 Row(
                     modifier = Modifier.padding(vertical = 4.dp),
@@ -729,7 +779,11 @@ private fun DesktopSettings(settings: AppSettings) {
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "局域网桥接功能尚未接入网络层；本页目前用于查看配对码与说明。",
+                text = if (settings.desktopAssistant) {
+                    "WebUI 只在应用运行期间提供服务，关闭开关即停止。"
+                } else {
+                    "打开开关后，手机和电脑需要连接同一个 WiFi；不会上传到云端。"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
@@ -932,7 +986,7 @@ private fun OtherSettings(
             title = { Text("隐私说明") },
             text = {
                 Text(
-                    "TokiTodo 没有申请网络权限。待办、专注记录、锁机时段和个人档案都保存在本机，" +
+                    "TokiTodo 只在检查软件更新时访问 GitHub。待办、专注记录、锁机时段和个人档案都保存在本机，" +
                         "不会同步到任何服务器；卸载应用或清空数据后再无副本，建议定期使用导出备份。",
                 )
             },

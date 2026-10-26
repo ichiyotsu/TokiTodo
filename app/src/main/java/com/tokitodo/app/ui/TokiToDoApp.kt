@@ -60,9 +60,12 @@ import com.tokitodo.app.data.TimerEvent
 import com.tokitodo.app.data.TimerMode
 import com.tokitodo.app.data.TimerViewModel
 import com.tokitodo.app.data.Todo
+import com.tokitodo.app.data.ReminderScheduler
+import com.tokitodo.app.data.WebUiServer
 import com.tokitodo.app.data.TodoCollection
 import com.tokitodo.app.data.Wish
 import com.tokitodo.app.ui.collections.CollectionsScreen
+import com.tokitodo.app.ui.about.AboutScreen
 import com.tokitodo.app.ui.components.FloatingNavBar
 import com.tokitodo.app.ui.extras.CountdownScreen
 import com.tokitodo.app.ui.extras.VipScreen
@@ -70,11 +73,12 @@ import com.tokitodo.app.ui.extras.WishWallScreen
 import com.tokitodo.app.ui.force.ForceEnhancementsScreen
 import com.tokitodo.app.ui.force.ForceStudySheet
 import com.tokitodo.app.ui.force.WhitelistScreen
+import com.tokitodo.app.ui.force.TodoWhitelistScreen
 import com.tokitodo.app.ui.history.HistoryCenterScreen
 import com.tokitodo.app.ui.lock.LockScreen
 import com.tokitodo.app.ui.profile.ProfileScreen
 import com.tokitodo.app.ui.settings.SettingsDetailScreen
-import com.tokitodo.app.ui.stats.StatsScreen
+import com.tokitodo.app.ui.stats.AnalyticsScreen
 import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.tokiGlass
 import com.tokitodo.app.ui.timer.CompletionInfo
@@ -147,6 +151,27 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
                 )
             }
         }
+    }
+
+    LaunchedEffect(settings.desktopAssistant) {
+        if (settings.desktopAssistant) {
+            val code = settings.desktopPairingCode.ifBlank {
+                (100000..999999).random().toString()
+            }
+            if (settings.desktopPairingCode.isBlank()) {
+                appViewModel.updateSettings { it.copy(desktopPairingCode = code) }
+            }
+            WebUiServer.start(
+                code = code,
+                sessions = { appViewModel.sessions.value },
+                todos = { appViewModel.todos.value },
+            )
+        } else {
+            WebUiServer.stop()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { WebUiServer.stop() }
     }
 
     LaunchedEffect(timerViewModel) {
@@ -363,6 +388,14 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
                 showLockCountdown = settings.lockShowCountdown,
                 allowEmergencyUnlock = settings.lockAllowEmergency,
                 keepAwakeDefault = settings.keepScreenAwake,
+                clockFont = settings.clockFont,
+                backgroundPath = settings.timerBackgroundPath,
+                onClockFontChange = { font ->
+                    appViewModel.updateSettings { it.copy(clockFont = font) }
+                },
+                onBackgroundPathChange = { path ->
+                    appViewModel.updateSettings { it.copy(timerBackgroundPath = path) }
+                },
                 onKeepAwakeChange = { value ->
                     appViewModel.updateSettings { it.copy(keepScreenAwake = value) }
                 },
@@ -431,6 +464,7 @@ private fun TabContent(
     onStartLock: (Int) -> Unit,
     onOpen: (Dest) -> Unit,
 ) {
+    val context = LocalContext.current
     when (tab) {
         Tab.Todos -> TodosScreen(
             todos = todos,
@@ -439,19 +473,13 @@ private fun TabContent(
             sessions = sessions,
             contentPadding = padding,
             onSaveTodo = { todo ->
-                if (todos.any { it.id == todo.id }) {
-                    appViewModel.updateTodo(todo)
-                } else {
-                    appViewModel.addTodo(
-                        title = todo.title,
-                        minutes = todo.minutes,
-                        art = todo.art,
-                        collectionId = todo.collectionId,
-                        note = todo.note,
-                    )
-                }
+                appViewModel.upsertTodo(todo)
+                ReminderScheduler.schedule(context, todo)
             },
-            onDeleteTodo = appViewModel::deleteTodo,
+            onDeleteTodo = { id ->
+                ReminderScheduler.cancel(context, id)
+                appViewModel.deleteTodo(id)
+            },
             onToggleDone = appViewModel::toggleDone,
             onStartTodo = onStartTodo,
             onStartFreeFocus = onStartFreeFocus,
@@ -464,6 +492,9 @@ private fun TabContent(
             },
             onUpdateSettings = appViewModel::updateSettings,
             onOpenHistory = { onOpen(Dest.History) },
+            onOpenTodoStats = { todo ->
+                onOpen(Dest.TodoStats(todo.id, todo.title))
+            },
         )
 
         Tab.Collections -> CollectionsScreen(
@@ -479,28 +510,28 @@ private fun TabContent(
             onDeleteCollection = appViewModel::deleteCollection,
             onStartTodo = onStartTodo,
             onStartFreeFocus = onStartFreeFocus,
+            onOpenStats = { collection ->
+                onOpen(Dest.CollectionStats(collection.id, collection.name))
+            },
         )
 
         Tab.Lock -> LockScreen(
             schedules = schedules,
             settings = settings,
             contentPadding = padding,
-            onStartNap = onStartNap,
             onStartLock = onStartLock,
             onAddSchedule = appViewModel::addSchedule,
             onToggleSchedule = appViewModel::setScheduleEnabled,
             onDeleteSchedule = appViewModel::deleteSchedule,
             onUpdateSettings = appViewModel::updateSettings,
+            onOpenWhitelist = { onOpen(Dest.Whitelist) },
         )
 
-        Tab.Stats -> StatsScreen(
+        Tab.Stats -> AnalyticsScreen(
             sessions = sessions,
-            settings = settings,
             contentPadding = padding,
+            showSummary = false,
             onOpenHistory = { onOpen(Dest.History) },
-            onOpenTimerSettings = { onOpen(Dest.Detail(SettingsPage.Timer)) },
-            onGoTodos = { onSelectTab(Tab.Todos) },
-            onClearSessions = appViewModel::clearSessions,
         )
 
         Tab.Profile -> ProfileScreen(
@@ -513,6 +544,7 @@ private fun TabContent(
             onOpenCountdown = { onOpen(Dest.Countdown) },
             onOpenWishWall = { onOpen(Dest.WishWall) },
             onOpenVip = { onOpen(Dest.Vip) },
+            onOpenAbout = { onOpen(Dest.About) },
             onUpdateSettings = appViewModel::updateSettings,
         )
     }
@@ -552,6 +584,75 @@ private fun DetailContent(
             onDeleteSession = appViewModel::deleteSession,
             onClearSessions = appViewModel::clearSessions,
         )
+
+        is Dest.ScopedHistory -> {
+            val scoped = when {
+                dest.todoId != null -> sessions.filter { it.todoId == dest.todoId }
+                dest.collectionId != null -> {
+                    val ids = appViewModel.todos.value
+                        .filter { it.collectionId == dest.collectionId }
+                        .map { it.id }
+                        .toSet()
+                    sessions.filter { it.todoId in ids }
+                }
+
+                else -> sessions
+            }
+            HistoryCenterScreen(
+                sessions = scoped,
+                contentPadding = padding,
+                screenTitle = "${dest.title} · 专注历史",
+                onBack = onBack,
+                onUpdateSession = appViewModel::updateSession,
+                onDeleteSession = appViewModel::deleteSession,
+                onClearSessions = appViewModel::clearSessions,
+            )
+        }
+
+        is Dest.TodoStats -> {
+            val todo = appViewModel.todos.value.firstOrNull { it.id == dest.todoId }
+            val context = LocalContext.current
+            AnalyticsScreen(
+                sessions = sessions.filter { it.todoId == dest.todoId },
+                title = dest.title,
+                contentPadding = padding,
+                showBack = true,
+                showSummary = true,
+                reminderMinute = todo?.reminderMinute,
+                onBack = onBack,
+                onOpenHistory = {
+                    onOpen(Dest.ScopedHistory(dest.title, todoId = dest.todoId))
+                },
+                onOpenWhitelist = {
+                    onOpen(Dest.TodoWhitelist(dest.todoId, dest.title))
+                },
+                onSetReminder = { minute ->
+                    todo?.let { current ->
+                        val updated = current.copy(reminderMinute = minute)
+                        appViewModel.upsertTodo(updated)
+                        ReminderScheduler.schedule(context, updated)
+                    }
+                },
+            )
+        }
+
+        is Dest.CollectionStats -> {
+            val ids = appViewModel.todos.value
+                .filter { it.collectionId == dest.collectionId }
+                .map { it.id }
+                .toSet()
+            AnalyticsScreen(
+                sessions = sessions.filter { it.todoId in ids },
+                title = dest.title,
+                contentPadding = padding,
+                showBack = true,
+                showSummary = true,
+                onBack = onBack,
+                onOpenHistory = {
+                    onOpen(Dest.ScopedHistory(dest.title, collectionId = dest.collectionId))
+                },
+            )
+        }
 
         Dest.Countdown -> CountdownScreen(
             events = countdowns,
@@ -605,6 +706,22 @@ private fun DetailContent(
             contentPadding = padding,
             onBack = onBack,
             onToggle = appViewModel::toggleWhitelistPackage,
+        )
+
+        is Dest.TodoWhitelist -> {
+            val todo = appViewModel.todos.value.firstOrNull { it.id == dest.todoId }
+            TodoWhitelistScreen(
+                selectedPackages = todo?.whitelistPackages ?: emptySet(),
+                title = "${dest.title} · 独立白名单",
+                contentPadding = padding,
+                onBack = onBack,
+                onToggle = { pkg -> appViewModel.toggleTodoWhitelist(dest.todoId, pkg) },
+            )
+        }
+
+        Dest.About -> AboutScreen(
+            contentPadding = padding,
+            onBack = onBack,
         )
 
         else -> SettingsDetailScreen(

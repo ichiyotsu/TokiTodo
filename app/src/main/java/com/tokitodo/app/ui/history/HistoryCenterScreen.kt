@@ -90,6 +90,7 @@ private enum class HistoryTab(val label: String) {
 fun HistoryCenterScreen(
     sessions: List<FocusSession>,
     contentPadding: PaddingValues,
+    screenTitle: String = "专注历史记录",
     onBack: () -> Unit,
     onUpdateSession: (String, String, Int, String) -> Unit,
     onDeleteSession: (String) -> Unit,
@@ -132,7 +133,7 @@ fun HistoryCenterScreen(
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "专注历史记录",
+                        text = screenTitle,
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )

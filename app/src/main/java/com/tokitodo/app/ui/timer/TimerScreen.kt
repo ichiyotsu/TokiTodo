@@ -3,8 +3,14 @@ package com.tokitodo.app.ui.timer
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
+import android.graphics.BitmapFactory
 import android.graphics.Color as AndroidColor
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -12,6 +18,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,9 +26,11 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +45,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
@@ -43,6 +53,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Spa
 import androidx.compose.material.icons.rounded.VolumeOff
@@ -64,6 +75,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,18 +84,25 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import com.tokitodo.app.data.AmbientMode
 import com.tokitodo.app.data.AmbientPlayer
+import com.tokitodo.app.data.ClockFont
 import com.tokitodo.app.data.TimerMode
 import com.tokitodo.app.data.TimerPhase
 import com.tokitodo.app.data.TimerState
@@ -92,8 +111,14 @@ import com.tokitodo.app.ui.components.ProgressRing
 import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.formatClock
 import com.tokitodo.app.ui.formatDuration
+import com.tokitodo.app.ui.formatTime
 import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.SheetShape
+import java.io.File
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 独立的全屏计时页。
@@ -107,6 +132,10 @@ fun TimerScreen(
     showLockCountdown: Boolean = true,
     allowEmergencyUnlock: Boolean = true,
     keepAwakeDefault: Boolean = true,
+    clockFont: ClockFont = ClockFont.Sans,
+    backgroundPath: String? = null,
+    onClockFontChange: (ClockFont) -> Unit = {},
+    onBackgroundPathChange: (String?) -> Unit = {},
     onKeepAwakeChange: (Boolean) -> Unit = {},
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -124,14 +153,49 @@ fun TimerScreen(
     var ambientMode by remember { mutableStateOf<AmbientMode?>(null) }
     var keepAwake by remember { mutableStateOf(keepAwakeDefault) }
     var showPauseDialog by remember { mutableStateOf(false) }
+    var currentClockFont by remember(clockFont) { mutableStateOf(clockFont) }
     val view = LocalView.current
     val dark = LocalDarkTheme.current
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val systemLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val activity = context.findActivity()
+    var forcedLandscape by remember { mutableStateOf<Boolean?>(null) }
+    val landscape = forcedLandscape ?: systemLandscape
+    val backgroundPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            copyTimerBackground(context, uri)?.let(onBackgroundPathChange)
+        }
+    }
+    DisposableEffect(activity) {
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
     val navigationSurface = MaterialTheme.colorScheme.surface.toArgb()
     val isLock = timer.mode == TimerMode.Lock
     val isNap = timer.mode == TimerMode.Nap
     val isRest = timer.phase == TimerPhase.Rest && timer.mode == TimerMode.Focus
     val isPaused = timer.pauseRemainingSeconds > 0
+
+    fun toggleOrientation() {
+        val next = !landscape
+        forcedLandscape = next
+        activity?.requestedOrientation = if (next) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    fun cycleClockFont() {
+        val entries = ClockFont.entries
+        val next = entries[(entries.indexOf(currentClockFont) + 1) % entries.size]
+        currentClockFont = next
+        onClockFontChange(next)
+    }
 
     DisposableEffect(view) {
         view.keepScreenOn = keepAwake || isLock
@@ -148,6 +212,15 @@ fun TimerScreen(
             controller?.isAppearanceLightNavigationBars = !dark
             @Suppress("DEPRECATION")
             window?.navigationBarColor = previousNavigationColor ?: navigationSurface
+        }
+    }
+
+    DisposableEffect(isLock, activity) {
+        if (isLock) {
+            runCatching { activity?.startLockTask() }
+        }
+        onDispose {
+            runCatching { activity?.stopLockTask() }
         }
     }
 
@@ -168,12 +241,35 @@ fun TimerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val customBackground by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+            initialValue = null,
+            backgroundPath,
+        ) {
+            value = withContext(Dispatchers.IO) {
+                backgroundPath?.takeIf { File(it).exists() }?.let { path ->
+                    runCatching {
+                        val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                        BitmapFactory.decodeFile(path, options)?.asImageBitmap()
+                    }.getOrNull()
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .blur(18.dp),
         ) {
-            Artwork(art = timer.art, modifier = Modifier.fillMaxSize(), scrim = false)
+            val bitmap = customBackground
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Artwork(art = timer.art, modifier = Modifier.fillMaxSize(), scrim = false)
+            }
         }
         Box(
             modifier = Modifier
@@ -188,7 +284,17 @@ fun TimerScreen(
                     ),
                 ),
         )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                ),
+        )
 
+        if (!landscape) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -236,14 +342,31 @@ fun TimerScreen(
                         color = Color.White,
                     )
                 }
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                TimerTopButton(
+                    icon = Icons.Rounded.ScreenRotation,
+                    description = "切换横屏",
+                    onClick = ::toggleOrientation,
+                )
+                Spacer(Modifier.width(6.dp))
+                TimerTopButton(
+                    icon = Icons.Rounded.Image,
+                    description = "更换背景",
+                    active = backgroundPath != null,
+                    onClick = {
+                        backgroundPicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                        )
+                    },
+                    onLongClick = { onBackgroundPathChange(null) },
+                )
             }
 
             Spacer(Modifier.weight(0.8f))
 
             Text(
                 text = when {
-                    isLock -> "把手机放下"
+                    isLock -> currentTimeLabel()
                     isRest -> "休息一下"
                     timer.noTimer -> "现在只做这一件事"
                     else -> timer.title
@@ -256,7 +379,7 @@ fun TimerScreen(
             Spacer(Modifier.height(6.dp))
             Text(
                 text = when {
-                    isLock -> "这段时间不属于通知，也不属于别人"
+                    isLock -> lockRange(timer)
                     isNap -> "慢慢吸气，慢慢呼气"
                     isRest -> "离开屏幕，让眼睛和呼吸慢下来"
                     timer.noTimer -> "没有倒计时，完成后点「跳过」结束"
@@ -275,7 +398,12 @@ fun TimerScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable(onClick = ::cycleClockFont),
+                contentAlignment = Alignment.Center,
+            ) {
                 if (isNap) BreathingHalo()
                 ProgressRing(
                     progress = if (isPaused) 0f else timer.progress,
@@ -288,16 +416,13 @@ fun TimerScreen(
                         if (isLock && !showLockCountdown) {
                             Text(
                                 text = "锁机",
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 46.sp),
+                                style = clockTextStyle(currentClockFont, 46.sp),
                                 color = Color.White,
                             )
                         } else if (isPaused) {
                             Text(
                                 text = formatClock(timer.pauseRemainingSeconds),
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = 58.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                ),
+                                style = clockTextStyle(currentClockFont, 58.sp),
                                 color = Color.White,
                             )
                             Text(
@@ -308,7 +433,7 @@ fun TimerScreen(
                         } else if (timer.noTimer) {
                             Text(
                                 text = "专注",
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 54.sp),
+                                style = clockTextStyle(currentClockFont, 54.sp),
                                 color = Color.White,
                             )
                             Text(
@@ -319,10 +444,7 @@ fun TimerScreen(
                         } else {
                             Text(
                                 text = formatClock(timer.displaySeconds),
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontSize = 62.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                ),
+                                style = clockTextStyle(currentClockFont, 62.sp),
                                 color = Color.White,
                             )
                             Text(
@@ -398,13 +520,52 @@ fun TimerScreen(
                     isNap -> "小憩不会计入专注时长"
                     isPaused -> "四分钟后会提醒你回来"
                     timer.strict -> "严格模式：不可暂停，可提前完成或取消"
-                    else -> "保持呼吸 · 完成${if (timer.countUp) "后点「跳过」结束" else "后会回到主页"}"
+                    else -> "保持呼吸 · 点击时钟换字体（${currentClockFont.label}）"
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.55f),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(10.dp))
+        }
+        } else {
+            LandscapeTimer(
+                timer = timer,
+                isLock = isLock,
+                isNap = isNap,
+                isRest = isRest,
+                isPaused = isPaused,
+                showLockCountdown = showLockCountdown,
+                allowEmergencyUnlock = allowEmergencyUnlock,
+                clockFont = currentClockFont,
+                keepAwake = keepAwake,
+                ambientOn = ambientMode != null,
+                onClockTap = ::cycleClockFont,
+                onToggleOrientation = ::toggleOrientation,
+                onPickBackground = {
+                    backgroundPicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                },
+                onResetBackground = { onBackgroundPathChange(null) },
+                onKeepAwake = {
+                    keepAwake = !keepAwake
+                    onKeepAwakeChange(keepAwake)
+                    view.keepScreenOn = keepAwake
+                },
+                onAmbient = { ambientSheetOpen = true },
+                onCycle = { cycleSheetOpen = true },
+                onPause = {
+                    if (!timer.strict) {
+                        if (isPaused) onResume() else onPause()
+                    }
+                },
+                onSkip = {
+                    if (isRest) skipRestOpen = true else skipStudyOpen = true
+                },
+                onFinishEarly = onFinishEarly,
+                onLockLongPress = { confirmAbandon = true },
+            )
         }
 
         if (isPaused) {
@@ -546,6 +707,363 @@ fun TimerScreen(
     }
 }
 
+/* ----------------------------- landscape ----------------------------- */
+
+@Composable
+private fun LandscapeTimer(
+    timer: TimerState,
+    isLock: Boolean,
+    isNap: Boolean,
+    isRest: Boolean,
+    isPaused: Boolean,
+    showLockCountdown: Boolean,
+    allowEmergencyUnlock: Boolean,
+    clockFont: ClockFont,
+    keepAwake: Boolean,
+    ambientOn: Boolean,
+    onClockTap: () -> Unit,
+    onToggleOrientation: () -> Unit,
+    onPickBackground: () -> Unit,
+    onResetBackground: () -> Unit,
+    onKeepAwake: () -> Unit,
+    onAmbient: () -> Unit,
+    onCycle: () -> Unit,
+    onPause: () -> Unit,
+    onSkip: () -> Unit,
+    onFinishEarly: () -> Unit,
+    onLockLongPress: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 22.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.14f))
+                    .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = if (isLock) Icons.Rounded.Lock else Icons.Rounded.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp),
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    text = when {
+                        isLock -> "锁机中"
+                        isNap -> "小憩中"
+                        isRest -> "休息中"
+                        timer.strict -> "严格模式"
+                        else -> "专注中"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            TimerTopButton(
+                icon = Icons.Rounded.ScreenRotation,
+                description = "切换竖屏",
+                onClick = onToggleOrientation,
+            )
+            Spacer(Modifier.width(6.dp))
+            TimerTopButton(
+                icon = Icons.Rounded.Image,
+                description = "更换背景",
+                active = false,
+                onClick = onPickBackground,
+                onLongClick = onResetBackground,
+            )
+        }
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = when {
+                        isLock -> currentTimeLabel()
+                        isRest -> "休息一下"
+                        timer.noTimer -> "现在只做这一件事"
+                        else -> timer.title
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = when {
+                        isLock -> lockRange(timer)
+                        isRest -> "离开屏幕，让眼睛和呼吸慢下来"
+                        timer.noTimer -> "没有倒计时，完成后点「跳过」结束"
+                        timer.countUp -> "正计时 · 已经专注 ${formatDuration(timer.elapsedMinutes)}"
+                        timer.cycleEnabled -> "循环中 · 第 ${(timer.cycleDone + 1).coerceAtMost(if (timer.cycleTotal < 0) Int.MAX_VALUE else timer.cycleTotal)} 轮"
+                        else -> "还剩 ${formatDuration((timer.displaySeconds + 59) / 60)}"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.72f),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                TimerClockFace(
+                    timer = timer,
+                    isLock = isLock,
+                    isNap = isNap,
+                    isRest = isRest,
+                    isPaused = isPaused,
+                    showLockCountdown = showLockCountdown,
+                    clockFont = clockFont,
+                    size = 230.dp,
+                    onClick = onClockTap,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "点击时钟切换字体 · ${clockFont.label}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .width(218.dp)
+                    .fillMaxHeight()
+                    .padding(start = 18.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                when {
+                    isLock -> LockActions(
+                        allowEmergencyUnlock = allowEmergencyUnlock,
+                        onLongPress = onLockLongPress,
+                    )
+
+                    isNap -> {
+                        TimerAction(
+                            icon = if (timer.running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            label = if (timer.running) "暂停" else "继续",
+                            active = false,
+                            onClick = { if (timer.running) onPause() else onFinishEarly() },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        TimerAction(
+                            icon = Icons.Rounded.Check,
+                            label = "结束小憩",
+                            active = false,
+                            onClick = onFinishEarly,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    else -> TimerToolbar(
+                        keepAwake = keepAwake,
+                        ambientOn = ambientOn,
+                        cycleEnabled = timer.cycleEnabled,
+                        paused = isPaused,
+                        strict = timer.strict,
+                        vertical = true,
+                        onKeepAwake = onKeepAwake,
+                        onAmbient = onAmbient,
+                        onCycle = onCycle,
+                        onPause = onPause,
+                        onSkip = onSkip,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = when {
+                        isLock -> "长按下方按钮才能放弃"
+                        isPaused -> "四分钟后提醒你回来"
+                        timer.strict -> "严格模式：不可暂停"
+                        else -> "保持呼吸 · 完成后回到主页"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimerTopButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    active: Boolean = false,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+) {
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(
+                if (active) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.13f),
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = Color.White,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+@Composable
+private fun TimerClockFace(
+    timer: TimerState,
+    isLock: Boolean,
+    isNap: Boolean,
+    isRest: Boolean,
+    isPaused: Boolean,
+    showLockCountdown: Boolean,
+    clockFont: ClockFont,
+    size: Dp,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isNap) BreathingHalo()
+        ProgressRing(
+            progress = if (isPaused) 0f else timer.progress,
+            size = size,
+            stroke = 9.dp,
+            track = Color.White.copy(alpha = 0.16f),
+            accent = if (isRest) Color(0xFFB9ECD9) else Color.White.copy(alpha = 0.92f),
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                when {
+                    isLock && !showLockCountdown -> Text(
+                        text = "锁机",
+                        style = clockTextStyle(clockFont, 44.sp),
+                        color = Color.White,
+                    )
+
+                    isPaused -> {
+                        Text(
+                            text = formatClock(timer.pauseRemainingSeconds),
+                            style = clockTextStyle(clockFont, 52.sp),
+                            color = Color.White,
+                        )
+                        Text(
+                            text = "暂停中",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.72f),
+                        )
+                    }
+
+                    timer.noTimer -> {
+                        Text(
+                            text = "专注",
+                            style = clockTextStyle(clockFont, 48.sp),
+                            color = Color.White,
+                        )
+                        Text(
+                            text = "不计时",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.72f),
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            text = formatClock(timer.displaySeconds),
+                            style = clockTextStyle(clockFont, 54.sp),
+                            color = Color.White,
+                        )
+                        Text(
+                            text = when {
+                                timer.countUp -> "正向计时"
+                                isRest -> "休息中"
+                                else -> "${(timer.progress * 100).toInt()}% 完成"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.72f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun clockTextStyle(font: ClockFont, size: androidx.compose.ui.unit.TextUnit): TextStyle {
+    val base = MaterialTheme.typography.displayLarge
+    return when (font) {
+        ClockFont.Sans -> base.copy(
+            fontSize = size,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        ClockFont.Serif -> base.copy(
+            fontFamily = FontFamily.Serif,
+            fontSize = size,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        ClockFont.Mono -> base.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = size,
+            fontWeight = FontWeight.Bold,
+        )
+
+        ClockFont.Digital -> base.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = size,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.5.sp,
+        )
+    }
+}
+
+private fun copyTimerBackground(context: Context, uri: Uri): String? = runCatching {
+    val dir = File(context.filesDir, "timer").apply { mkdirs() }
+    val file = File(dir, "background_${System.currentTimeMillis()}.jpg")
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        file.outputStream().use { output -> input.copyTo(output) }
+    }
+    file.takeIf { it.length() > 0 }?.absolutePath
+}.getOrNull()
+
 /* ----------------------------- toolbar ----------------------------- */
 
 @Composable
@@ -555,54 +1073,116 @@ private fun TimerToolbar(
     cycleEnabled: Boolean,
     paused: Boolean,
     strict: Boolean,
+    vertical: Boolean = false,
     onKeepAwake: () -> Unit,
     onAmbient: () -> Unit,
     onCycle: () -> Unit,
     onPause: () -> Unit,
     onSkip: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(Color.Black.copy(alpha = 0.28f))
-            .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(28.dp))
-            .padding(horizontal = 6.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TimerAction(
-            icon = if (keepAwake) Icons.Rounded.WbSunny else Icons.Rounded.LightMode,
-            label = "常亮",
-            active = keepAwake,
-            onClick = onKeepAwake,
-        )
-        TimerAction(
-            icon = if (ambientOn) Icons.Rounded.MusicNote else Icons.Rounded.VolumeOff,
-            label = "背景音",
-            active = ambientOn,
-            onClick = onAmbient,
-        )
-        TimerAction(
-            icon = Icons.Rounded.Repeat,
-            label = "循环",
-            active = cycleEnabled,
-            onClick = onCycle,
-        )
-        TimerAction(
-            icon = Icons.Rounded.Pause,
-            label = if (paused) "继续" else "暂停",
-            active = paused,
-            enabled = !strict,
-            onClick = onPause,
-        )
-        TimerAction(
-            icon = Icons.Rounded.SkipNext,
-            label = "跳过",
-            active = false,
-            onClick = onSkip,
-        )
+    val actions: @Composable (Modifier) -> Unit = { modifier ->
+        if (vertical) {
+            Column(
+                modifier = modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.28f))
+                    .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(24.dp))
+                    .padding(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                TimerAction(
+                    icon = if (keepAwake) Icons.Rounded.WbSunny else Icons.Rounded.LightMode,
+                    label = "常亮",
+                    active = keepAwake,
+                    onClick = onKeepAwake,
+                    modifier = Modifier.fillMaxWidth(),
+                    vertical = true,
+                )
+                TimerAction(
+                    icon = if (ambientOn) Icons.Rounded.MusicNote else Icons.Rounded.VolumeOff,
+                    label = "背景音",
+                    active = ambientOn,
+                    onClick = onAmbient,
+                    modifier = Modifier.fillMaxWidth(),
+                    vertical = true,
+                )
+                TimerAction(
+                    icon = Icons.Rounded.Repeat,
+                    label = "循环",
+                    active = cycleEnabled,
+                    onClick = onCycle,
+                    modifier = Modifier.fillMaxWidth(),
+                    vertical = true,
+                )
+                TimerAction(
+                    icon = Icons.Rounded.Pause,
+                    label = if (paused) "继续" else "暂停",
+                    active = paused,
+                    enabled = !strict,
+                    onClick = onPause,
+                    modifier = Modifier.fillMaxWidth(),
+                    vertical = true,
+                )
+                TimerAction(
+                    icon = Icons.Rounded.SkipNext,
+                    label = "跳过",
+                    active = false,
+                    onClick = onSkip,
+                    modifier = Modifier.fillMaxWidth(),
+                    vertical = true,
+                )
+            }
+        } else {
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.28f))
+                    .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 6.dp, vertical = 7.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TimerAction(
+                    icon = if (keepAwake) Icons.Rounded.WbSunny else Icons.Rounded.LightMode,
+                    label = "常亮",
+                    active = keepAwake,
+                    onClick = onKeepAwake,
+                    modifier = Modifier.weight(if (keepAwake) 1.35f else 1f),
+                )
+                TimerAction(
+                    icon = if (ambientOn) Icons.Rounded.MusicNote else Icons.Rounded.VolumeOff,
+                    label = "背景音",
+                    active = ambientOn,
+                    onClick = onAmbient,
+                    modifier = Modifier.weight(if (ambientOn) 1.35f else 1f),
+                )
+                TimerAction(
+                    icon = Icons.Rounded.Repeat,
+                    label = "循环",
+                    active = cycleEnabled,
+                    onClick = onCycle,
+                    modifier = Modifier.weight(if (cycleEnabled) 1.35f else 1f),
+                )
+                TimerAction(
+                    icon = Icons.Rounded.Pause,
+                    label = if (paused) "继续" else "暂停",
+                    active = paused,
+                    enabled = !strict,
+                    onClick = onPause,
+                    modifier = Modifier.weight(if (paused) 1.35f else 1f),
+                )
+                TimerAction(
+                    icon = Icons.Rounded.SkipNext,
+                    label = "跳过",
+                    active = false,
+                    onClick = onSkip,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
     }
+    actions(Modifier)
 }
 
 @Composable
@@ -612,46 +1192,89 @@ private fun TimerAction(
     active: Boolean,
     enabled: Boolean = true,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    vertical: Boolean = false,
 ) {
-    Column(
-        modifier = Modifier
-            .width(60.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        active -> Color.White
-                        enabled -> Color.White.copy(alpha = 0.12f)
-                        else -> Color.White.copy(alpha = 0.06f)
-                    },
-                ),
-            contentAlignment = Alignment.Center,
+    val shape = if (active) CircleShape else RoundedCornerShape(12.dp)
+    val background = when {
+        active -> Color.White
+        enabled -> Color.White.copy(alpha = 0.10f)
+        else -> Color.White.copy(alpha = 0.05f)
+    }
+    val tint = when {
+        active -> MaterialTheme.colorScheme.primary
+        enabled -> Color.White.copy(alpha = 0.9f)
+        else -> Color.White.copy(alpha = 0.35f)
+    }
+    if (vertical) {
+        Row(
+            modifier = modifier
+                .height(if (active) 54.dp else 46.dp)
+                .clip(shape)
+                .background(background)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = when {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(7.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = when {
                     active -> MaterialTheme.colorScheme.primary
-                    enabled -> Color.White.copy(alpha = 0.9f)
+                    enabled -> Color.White.copy(alpha = 0.88f)
                     else -> Color.White.copy(alpha = 0.35f)
                 },
-                modifier = Modifier.size(19.dp),
             )
         }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = if (enabled) Color.White.copy(alpha = 0.82f) else Color.White.copy(alpha = 0.35f),
-            maxLines = 1,
-        )
+        return
+    }
+    if (active) {
+        Row(
+            modifier = modifier
+                .height(52.dp)
+                .clip(shape)
+                .background(background)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(19.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = when {
+                    active -> MaterialTheme.colorScheme.primary
+                    enabled -> Color.White.copy(alpha = 0.92f)
+                    else -> Color.White.copy(alpha = 0.35f)
+                },
+                maxLines = 1,
+            )
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .height(52.dp)
+                .clip(shape)
+                .background(background)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 2.dp, vertical = 5.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(19.dp))
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = if (enabled) Color.White.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.35f),
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -1119,6 +1742,15 @@ private fun BreathingHalo() {
     ) {
         drawCircle(Color.White.copy(alpha = alpha))
     }
+}
+
+private fun currentTimeLabel(): String =
+    LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+
+private fun lockRange(timer: TimerState): String {
+    val start = formatTime(timer.startedAt)
+    val end = formatTime(timer.startedAt + timer.totalSeconds * 1000L)
+    return "锁机 $start – $end"
 }
 
 private fun Context.findActivity(): Activity? = when (this) {

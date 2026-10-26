@@ -42,6 +42,10 @@ data class Todo(
     val habitPeriod: HabitPeriod = HabitPeriod.Daily,
     val habitHours: Float = 0f,
     val coverPath: String? = null,
+    /** 每日提醒的分钟数（0..1439），null 表示未开启。 */
+    val reminderMinute: Int? = null,
+    /** 这件待办专注期间单独放行的应用包名。 */
+    val whitelistPackages: Set<String> = emptySet(),
 )
 
 /** 待办集：一组待办的集合，只保存 todoId，不复制待办。 */

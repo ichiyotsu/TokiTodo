@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.History
@@ -96,6 +97,7 @@ fun TodoEditorSheet(
     onCreateCollection: (String) -> TodoCollection,
     onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenStats: (Todo) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var page by remember { mutableStateOf(0) }
@@ -170,6 +172,8 @@ fun TodoEditorSheet(
                     onNoteChange = { note = it.take(200) },
                     onOpenSettings = { page = 1 },
                     onOpenHistory = onOpenHistory,
+                    onOpenStats = { onOpenStats(initial!!) },
+                    canStats = initial != null,
                     onSave = {
                         val now = System.currentTimeMillis()
                         onSave(
@@ -359,6 +363,8 @@ private fun EditorMain(
     onNoteChange: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenStats: () -> Unit,
+    canStats: Boolean,
     onSave: () -> Unit,
     canSave: Boolean,
 ) {
@@ -467,7 +473,21 @@ private fun EditorMain(
             ) {
                 Icon(Icons.Rounded.History, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("专注历史", style = MaterialTheme.typography.labelLarge)
+                Text("历史", style = MaterialTheme.typography.labelLarge)
+            }
+            FilledTonalButton(
+                onClick = onOpenStats,
+                enabled = canStats,
+                shape = CircleShape,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.Rounded.BarChart,
+                    contentDescription = null,
+                    modifier = Modifier.size(17.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text("数据", style = MaterialTheme.typography.labelLarge)
             }
         }
         Spacer(Modifier.height(10.dp))

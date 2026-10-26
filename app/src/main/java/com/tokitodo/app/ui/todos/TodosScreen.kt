@@ -83,6 +83,7 @@ fun TodosScreen(
     onCreateCollection: (String) -> TodoCollection,
     onUpdateSettings: ((AppSettings) -> AppSettings) -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenTodoStats: (Todo) -> Unit,
 ) {
     var editing by remember { mutableStateOf<Todo?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
@@ -234,6 +235,10 @@ fun TodosScreen(
             onOpenHistory = {
                 editorOpen = false
                 onOpenHistory()
+            },
+            onOpenStats = { todo ->
+                editorOpen = false
+                onOpenTodoStats(todo)
             },
         )
     }
