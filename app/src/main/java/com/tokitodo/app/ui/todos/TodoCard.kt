@@ -68,7 +68,7 @@ fun TodoCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(152.dp)
+            .height(110.dp)
             .alpha(if (todo.done) 0.62f else 1f)
             .shadow(elevation = 10.dp, shape = shape, clip = false)
             .clip(shape)
@@ -97,128 +97,122 @@ fun TodoCard(
                     shape = shape,
                 ),
         )
-        // 完成勾选
-        Surface(
-            onClick = onToggleDone,
-            shape = CircleShape,
-            color = Color.White.copy(alpha = if (todo.done) 0.95f else 0.16f),
-            contentColor = if (todo.done) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                Color.White
-            },
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                Color.White.copy(alpha = 0.30f),
-            ),
+        Row(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 14.dp, end = 14.dp)
-                .size(28.dp),
+                .fillMaxSize()
+                .padding(start = 18.dp, end = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Check, contentDescription = "完成待办", modifier = Modifier.size(15.dp))
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, bottom = 18.dp),
-        ) {
-            Text(
-                text = todo.title,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 21.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    lineHeight = 27.sp,
-                    shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.28f),
-                        offset = Offset(0f, 2f),
-                        blurRadius = 10f,
-                    ),
-                ),
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (todo.done) TextDecoration.LineThrough else null,
-                modifier = Modifier.padding(end = 92.dp),
-            )
-            Spacer(Modifier.height(7.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Schedule,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(13.dp),
-                )
-                Spacer(Modifier.width(4.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${todo.minutes} 分钟",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.88f),
+                    text = todo.title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 24.sp,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.30f),
+                            offset = Offset(0f, 2f),
+                            blurRadius = 10f,
+                        ),
+                    ),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (todo.done) TextDecoration.LineThrough else null,
                 )
-                if (collectionName != null) {
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(3.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.55f)),
+                Spacer(Modifier.height(5.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Schedule,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.82f),
+                        modifier = Modifier.size(12.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text(
-                        text = collectionName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.78f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (todo.focusCount > 0) {
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(3.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.55f)),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "专注 ${todo.focusCount} 次",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "${todo.minutes} 分钟",
+                        style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.88f),
                     )
+                    if (collectionName != null) {
+                        Spacer(Modifier.width(7.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(2.5.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.5f)),
+                        )
+                        Spacer(Modifier.width(7.dp))
+                        Text(
+                            text = collectionName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.78f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (todo.focusCount > 0) {
+                        Spacer(Modifier.width(7.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(2.5.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.5f)),
+                        )
+                        Spacer(Modifier.width(7.dp))
+                        Text(
+                            text = "专注 ${todo.focusCount} 次",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.88f),
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
-        }
-
-        // 开始按钮
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(50),
-            color = Color.White.copy(alpha = 0.20f),
-            contentColor = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.38f)),
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 16.dp),
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 14.dp, end = 16.dp, top = 9.dp, bottom = 9.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            Spacer(Modifier.width(8.dp))
+            Surface(
+                onClick = onToggleDone,
+                shape = CircleShape,
+                color = Color.White.copy(alpha = if (todo.done) 0.95f else 0.16f),
+                contentColor = if (todo.done) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    Color.White
+                },
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Color.White.copy(alpha = 0.30f),
+                ),
+                modifier = Modifier.size(32.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(17.dp),
-                )
-                Text(
-                    text = "开始",
-                    style = MaterialTheme.typography.labelLarge,
-                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Check, contentDescription = "完成待办", modifier = Modifier.size(16.dp))
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Surface(
+                onClick = onClick,
+                shape = RoundedCornerShape(50),
+                color = Color.White.copy(alpha = 0.20f),
+                contentColor = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.38f)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "开始",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
             }
         }
     }
