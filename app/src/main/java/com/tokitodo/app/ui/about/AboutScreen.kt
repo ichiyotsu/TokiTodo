@@ -86,14 +86,16 @@ fun AboutScreen(
         scope.launch {
             state = withContext(Dispatchers.IO) {
                 runCatching {
-                    val connection = URL("https://api.github.com/repos/ichiyotsu/TokiTodo/releases/latest")
+                    val connection = URL("https://api.github.com/repos/ichiyotsu/TokiTodo/releases?per_page=1")
                         .openConnection() as HttpURLConnection
                     connection.connectTimeout = 12_000
                     connection.readTimeout = 12_000
                     connection.setRequestProperty("User-Agent", "TokiTodo")
                     connection.setRequestProperty("Accept", "application/vnd.github+json")
                     val body = connection.inputStream.bufferedReader().use { it.readText() }
-                    val json = JSONObject(body)
+                    val releases = org.json.JSONArray(body)
+                    if (releases.length() == 0) return@runCatching UpdateState.Error("还没有发布版本")
+                    val json = releases.getJSONObject(0)
                     val latest = json.optString("tag_name").removePrefix("v")
                     val asset = json.optJSONArray("assets")?.let { assets ->
                         (0 until assets.length())
