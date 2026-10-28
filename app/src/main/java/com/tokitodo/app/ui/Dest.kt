@@ -13,9 +13,9 @@ enum class SettingsPage(val title: String) {
     Timer("专注计时核心设置"),
     Appearance("海报背景和外观"),
     NavBar("自定义底栏模块"),
-    Theme("主题颜色搭配"),
     Widget("桌面小组件选项"),
     Desktop("连接电脑端专注助手"),
+    Backup("备份 | 恢复"),
     Other("其他设置"),
 }
 

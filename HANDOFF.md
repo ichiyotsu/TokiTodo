@@ -1,6 +1,6 @@
 # TokiTodo — 交接文档
 
-> 更新：2026-10-26 · 版本 0.2.1（versionCode 3）
+> 更新：2026-10-28 · 版本 0.1.0 Beta.1（versionCode 4）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
 > 设计参考：`D:\DSH\TokiNote\project`（只借设计语言与 Compose 结构）
 
@@ -16,10 +16,10 @@
 - 编辑器：悬浮卡片、相册封面 + 裁剪、设置子页、待办集内新建、长按预设改时长、数据入口。
 - 我的：渐变、可换头像、ID/签名编辑、无图标底板、许愿墙便签、关于独立页、软件内更新、桌面小组件、局域网 WebUI。
 - 强制学习：弹窗 + 提升强制性二级页 + 白名单应用选择（策略持久化，系统执行层预留）。
-- 备份：JSON 导入导出；不包含封面/头像二进制文件。
+- 备份：JSON 导入导出，包含封面 / 头像 / 计时背景图片。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiTodo-0.2.1.apk`（release + R8，debug 签名）。
-- Release：`0.1.0` / `0.2.0` / `0.2.1`；`0.2.1` 为最新。
+- 可安装包：`dist/TokiTodo-0.1.0-beta.1.apk`（release + R8，debug 签名）。
+- Release：仅 `0.1.0 Beta.1` 测试版；tag 为 `0.1.0-beta.1`。
 
 ## 2. 环境
 

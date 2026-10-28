@@ -104,9 +104,17 @@ fun SettingsDetailScreen(
             SettingsPage.Timer -> TimerSettings(settings, onUpdate)
             SettingsPage.Appearance -> AppearanceSettings(settings, onUpdate)
             SettingsPage.NavBar -> NavBarSettings(settings, onUpdate)
-            SettingsPage.Theme -> ThemeSettings(settings, onUpdate)
             SettingsPage.Widget -> WidgetSettings(settings, onUpdate)
             SettingsPage.Desktop -> DesktopSettings(settings, onUpdate)
+            SettingsPage.Backup -> OtherSettings(
+                settings = settings,
+                onClearSessions = onClearSessions,
+                onClearAll = onClearAll,
+                exportJson = exportJson,
+                onImport = onImport,
+                onOpenHistory = onOpenHistory,
+                backupOnly = true,
+            )
             SettingsPage.Other -> OtherSettings(
                 settings = settings,
                 onClearSessions = onClearSessions,
@@ -114,6 +122,7 @@ fun SettingsDetailScreen(
                 exportJson = exportJson,
                 onImport = onImport,
                 onOpenHistory = onOpenHistory,
+                backupOnly = false,
             )
         }
     }
@@ -801,6 +810,7 @@ private fun OtherSettings(
     exportJson: () -> String,
     onImport: (String) -> Boolean,
     onOpenHistory: () -> Unit,
+    backupOnly: Boolean = false,
 ) {
     var confirmClearSessions by remember { mutableStateOf(false) }
     var confirmClearAll by remember { mutableStateOf(false) }
@@ -839,9 +849,10 @@ private fun OtherSettings(
         }
     }
 
-    SectionCard {
-        Column(Modifier.padding(18.dp)) {
-            SettingTitle("数据", "备份是一个 JSON 文件，由你保管")
+    if (backupOnly) {
+        SectionCard {
+            Column(Modifier.padding(18.dp)) {
+                SettingTitle("数据", "备份是一个 JSON 文件，由你保管")
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
@@ -883,79 +894,33 @@ private fun OtherSettings(
             )
         }
     }
-    SectionCard {
-        Column(Modifier.padding(vertical = 8.dp)) {
-            SettingTitle("清理", null)
-            SettingRowInline(
-                title = "清空专注记录",
-                subtitle = "统计归零，待办与设置保留",
-                tint = MaterialTheme.colorScheme.tertiary,
-            ) {
-                TextButton(onClick = { confirmClearSessions = true }) {
-                    Text("清空", color = MaterialTheme.colorScheme.error)
-                }
-            }
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-                modifier = Modifier.padding(start = 18.dp, end = 18.dp),
-            )
-            SettingRowInline(
-                title = "清空所有数据",
-                subtitle = "待办、待办集、锁机时段、记录全部删除",
-                tint = MaterialTheme.colorScheme.error,
-            ) {
-                TextButton(onClick = { confirmClearAll = true }) {
-                    Text("重置", color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
     }
-    SectionCard {
-        Column(Modifier.padding(18.dp)) {
-            SettingTitle("关于", null)
-            Spacer(Modifier.height(6.dp))
-            listOf("版本" to "0.2.1", "应用" to "TokiTodo", "网络权限" to "仅更新/WebUI").forEach { (key, value) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+    if (!backupOnly) {
+        SectionCard {
+            Column(Modifier.padding(vertical = 8.dp)) {
+                SettingTitle("清理", null)
+                SettingRowInline(
+                    title = "清空专注记录",
+                    subtitle = "统计归零，待办与设置保留",
+                    tint = MaterialTheme.colorScheme.tertiary,
                 ) {
-                    Text(
-                        text = key,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    TextButton(onClick = { confirmClearSessions = true }) {
+                        Text("清空", color = MaterialTheme.colorScheme.error)
+                    }
                 }
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                    .clickable { privacyOpen = true }
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Rounded.Shield,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.padding(start = 18.dp, end = 18.dp),
                 )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "隐私说明：没有账号，没有统计上报，没有广告。",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
+                SettingRowInline(
+                    title = "清空所有数据",
+                    subtitle = "待办、待办集、锁机时段、记录全部删除",
+                    tint = MaterialTheme.colorScheme.error,
+                ) {
+                    TextButton(onClick = { confirmClearAll = true }) {
+                        Text("重置", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
     }

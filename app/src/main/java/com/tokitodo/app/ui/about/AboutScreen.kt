@@ -76,7 +76,7 @@ fun AboutScreen(
     val versionName = remember {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
-        }.getOrNull() ?: "0.2.1"
+        }.getOrNull() ?: "0.1.0-beta.1"
     }
     var state by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
 

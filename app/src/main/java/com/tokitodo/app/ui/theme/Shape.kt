@@ -14,13 +14,8 @@ val TokiShapes = Shapes(
     extraLarge = RoundedCornerShape(38.dp),
 )
 
-/** 待办插画卡：四角不等，顶左最圆，像一张被风吹起的明信片。 */
-val ArtCardShape = RoundedCornerShape(
-    topStart = 32.dp,
-    topEnd = 22.dp,
-    bottomEnd = 32.dp,
-    bottomStart = 22.dp,
-)
+/** 待办插画卡：四角等圆角，跟随 M3 Expressive 的大圆角比例。 */
+val ArtCardShape = RoundedCornerShape(28.dp)
 
 /** 统计 / 设置的分段白卡。 */
 val SectionCardShape = RoundedCornerShape(28.dp)

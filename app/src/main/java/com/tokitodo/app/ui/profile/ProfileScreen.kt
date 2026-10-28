@@ -293,7 +293,7 @@ fun ProfileScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 18.dp),
+                        .padding(vertical = 12.dp),
                 ) {
                     QuickEntry(
                         icon = Icons.Rounded.Timer,
@@ -376,24 +376,16 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onOpenPage(SettingsPage.Other) }
+                            .clickable { onOpenPage(SettingsPage.Backup) }
                             .padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF4FA3F7).copy(alpha = 0.16f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Rounded.Cloud,
-                                contentDescription = null,
-                                tint = Color(0xFF3B82F6),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        Icon(
+                            Icons.Rounded.Cloud,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(24.dp),
+                        )
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -447,23 +439,6 @@ fun ProfileScreen(
                 )
                 SettingsDivider()
                 SettingRow(
-                    icon = Icons.Rounded.Palette,
-                    title = "主题颜色搭配",
-                    subtitle = "主题色 | 专注分布图配色",
-                    tint = Color(0xFFFCA5A5),
-                    iconBackground = false,
-                    onClick = { onOpenPage(SettingsPage.Theme) },
-                    trailing = {
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                        )
-                    },
-                )
-                SettingsDivider()
-                SettingRow(
                     icon = Icons.Rounded.Widgets,
                     title = "桌面小组件选项",
                     subtitle = "小组件背景图等",
@@ -501,7 +476,7 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "TokiTodo 0.2.1 · 无账号、无广告 · 仅检查更新时联网",
+                text = "TokiTodo 0.1.0 Beta.1 · 无账号、无广告 · 仅检查更新时联网",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 6.dp),
@@ -712,8 +687,8 @@ private fun QuickEntry(
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
-        Spacer(Modifier.height(7.dp))
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.height(5.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
@@ -728,7 +703,7 @@ private fun QuickDivider() {
     Box(
         modifier = Modifier
             .width(1.dp)
-            .height(64.dp)
+            .height(48.dp)
             .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
     )
 }

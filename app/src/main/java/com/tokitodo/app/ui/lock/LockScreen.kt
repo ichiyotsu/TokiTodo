@@ -80,6 +80,7 @@ import com.tokitodo.app.ui.components.SectionCard
 import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.formatMinuteOfDay
 import com.tokitodo.app.ui.theme.LockCardShape
+import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.SheetShape
 import com.tokitodo.app.ui.weekdayShort
 
@@ -104,6 +105,13 @@ fun LockScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                if (LocalDarkTheme.current) {
+                    Color(0xFF070B0A)
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+            )
             .padding(contentPadding)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 152.dp),
@@ -265,20 +273,31 @@ private fun QuickLockCard(onClick: () -> Unit) {
             listOf(Color(0xFFFF7059), Color(0xFFFFA07A)),
         ),
         onClick = onClick,
-        height = 178.dp,
+        height = 140.dp,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            LockIllustration(
+            Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 14.dp, top = 22.dp)
-                    .size(width = 144.dp, height = 144.dp),
-            )
+                    .padding(end = 22.dp)
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f))
+                    .border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Lock,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .fillMaxWidth(0.66f)
-                    .padding(start = 20.dp, end = 8.dp),
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 84.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -321,20 +340,6 @@ private fun QuickLockCard(onClick: () -> Unit) {
                         modifier = Modifier.size(15.dp),
                     )
                 }
-            }
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 14.dp, end = 14.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = "APP",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = Color.White,
-                )
             }
         }
     }
