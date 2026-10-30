@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,31 +49,65 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tokitodo.app.ui.TokiMotion
 import com.tokitodo.app.ui.pressScale
 import com.tokitodo.app.ui.theme.PillShape
 import com.tokitodo.app.ui.theme.SectionCardShape
 
-/** 顶部操作区：没有页面大标题，只保留右侧操作和可选的一行胶囊。 */
+/** 顶部操作区：TokiUI 大标题 + 右侧操作 + 可选胶囊。 */
 @Composable
 fun PageTopBar(
     modifier: Modifier = Modifier,
+    title: String? = null,
+    subtitle: String? = null,
     chip: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 18.dp, top = 10.dp),
+            .padding(start = 24.dp, end = 20.dp, top = 14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End,
-            content = actions,
-        )
+            verticalAlignment = Alignment.Top,
+        ) {
+            if (title != null) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 40.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (!subtitle.isNullOrBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = actions,
+            )
+        }
         if (chip != null) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             chip()
         }
     }
@@ -315,48 +350,25 @@ fun SettingRow(
                     Modifier
                 },
             )
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+            .heightIn(min = 56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .then(
-                    if (iconBackground) {
-                        Modifier.background(tint.copy(alpha = 0.16f))
-                    } else {
-                        Modifier
-                    },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(22.dp),
+        )
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (subtitle != null) {
-                Spacer(Modifier.height(1.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
         if (trailing != null) {
             Spacer(Modifier.width(8.dp))

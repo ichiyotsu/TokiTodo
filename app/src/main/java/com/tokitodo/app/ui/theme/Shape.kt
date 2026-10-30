@@ -14,19 +14,14 @@ val TokiShapes = Shapes(
     extraLarge = RoundedCornerShape(38.dp),
 )
 
-/** 待办插画卡：四角等圆角，跟随 M3 Expressive 的大圆角比例。 */
-val ArtCardShape = RoundedCornerShape(28.dp)
+/** 待办插画卡：TokiUI 26dp 等圆角。 */
+val ArtCardShape = RoundedCornerShape(26.dp)
 
 /** 统计 / 设置的分段白卡。 */
 val SectionCardShape = RoundedCornerShape(28.dp)
 
-/** 大号卡片（锁机页），四角同样带一点不对称。 */
-val LockCardShape = RoundedCornerShape(
-    topStart = 30.dp,
-    topEnd = 30.dp,
-    bottomEnd = 30.dp,
-    bottomStart = 18.dp,
-)
+/** 大号卡片（锁机页），TokiUI 26dp。 */
+val LockCardShape = RoundedCornerShape(26.dp)
 
 /** 顶部圆形操作按钮。 */
 val ActionButtonShape = CircleShape

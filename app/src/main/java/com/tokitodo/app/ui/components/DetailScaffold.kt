@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * 二级页外壳：返回圆钮 + 标题 + 可滚动内容。
@@ -49,14 +50,14 @@ fun DetailScaffold(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 24.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 onClick = onBack,
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(42.dp),
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(
@@ -66,10 +67,13 @@ fun DetailScaffold(
                     )
                 }
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 34.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -85,9 +89,9 @@ fun DetailScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 24.dp)
                 .padding(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             content()
             Spacer(Modifier.height(10.dp))

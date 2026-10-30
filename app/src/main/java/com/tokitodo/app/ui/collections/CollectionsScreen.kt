@@ -96,6 +96,8 @@ fun CollectionsScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
         PageTopBar(
+            title = "待办集",
+            subtitle = "把同类的事收在一起",
             chip = {
                 StudyModeChip(enabled = studyMode, onClick = onOpenStudyMode)
             },
@@ -149,8 +151,8 @@ fun CollectionsScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    end = 20.dp,
+                    start = 24.dp,
+                    end = 24.dp,
                     top = 18.dp,
                     bottom = 132.dp,
                 ),

@@ -81,6 +81,7 @@ import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.formatMinuteOfDay
 import com.tokitodo.app.ui.theme.LockCardShape
 import com.tokitodo.app.ui.theme.LocalDarkTheme
+import com.tokitodo.app.ui.theme.tokiUiBackground
 import com.tokitodo.app.ui.theme.SheetShape
 import com.tokitodo.app.ui.weekdayShort
 
@@ -105,18 +106,14 @@ fun LockScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                if (LocalDarkTheme.current) {
-                    Color(0xFF070B0A)
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-            )
+            .tokiUiBackground()
             .padding(contentPadding)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 152.dp),
     ) {
         PageTopBar(
+            title = "锁机",
+            subtitle = "把手机放下，留一点安静",
             actions = {
                 PillAction(
                     label = "必开权限",
@@ -350,7 +347,7 @@ private fun ScheduleUnavailableCard() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 24.dp)
             .clip(LockCardShape)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(horizontal = 18.dp, vertical = 18.dp),
@@ -444,7 +441,7 @@ private fun GradientCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 24.dp)
             .height(height)
             .shadow(8.dp, LockCardShape, clip = false)
             .clip(LockCardShape)

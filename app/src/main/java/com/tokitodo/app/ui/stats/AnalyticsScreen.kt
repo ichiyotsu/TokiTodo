@@ -189,12 +189,6 @@ fun AnalyticsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f),
-                    0.28f to MaterialTheme.colorScheme.surface,
-                ),
-            )
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
             .padding(bottom = 150.dp),
@@ -202,7 +196,7 @@ fun AnalyticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 24.dp, vertical = 10.dp),
         ) {
             if (showBack || !title.isNullOrBlank()) {
                 Row(
@@ -222,7 +216,11 @@ fun AnalyticsScreen(
                     if (!title.isNullOrBlank()) {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontSize = 34.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 40.sp,
+                            ),
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
@@ -682,7 +680,7 @@ fun AnalyticsScreen(
 
 @Composable
 private fun SectionBlock(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    SectionCard(modifier = Modifier.padding(horizontal = 18.dp, vertical = 5.dp)) {
+    SectionCard(modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)) {
         Column(Modifier.padding(16.dp), content = content)
     }
 }

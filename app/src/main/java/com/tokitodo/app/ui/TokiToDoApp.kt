@@ -80,6 +80,7 @@ import com.tokitodo.app.ui.profile.ProfileScreen
 import com.tokitodo.app.ui.settings.SettingsDetailScreen
 import com.tokitodo.app.ui.stats.AnalyticsScreen
 import com.tokitodo.app.ui.theme.LocalDarkTheme
+import com.tokitodo.app.ui.theme.tokiUiBackground
 import com.tokitodo.app.ui.theme.tokiGlass
 import com.tokitodo.app.ui.timer.CompletionInfo
 import com.tokitodo.app.ui.timer.CompletionScreen
@@ -276,9 +277,9 @@ fun TokiToDoApp(appViewModel: AppViewModel) {
 
     BackHandler(enabled = stack.isNotEmpty() && timer == null) { back() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().tokiUiBackground()) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
         ) { padding ->
             Box(
@@ -529,6 +530,7 @@ private fun TabContent(
 
         Tab.Stats -> AnalyticsScreen(
             sessions = sessions,
+            title = "统计",
             contentPadding = padding,
             showSummary = false,
             onOpenHistory = { onOpen(Dest.History) },

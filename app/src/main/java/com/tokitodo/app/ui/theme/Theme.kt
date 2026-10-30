@@ -186,31 +186,7 @@ fun TokiToDoTheme(
     colorPreset: ColorPreset = ColorPreset.Pine,
     content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
-    val base = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-
-        darkTheme -> darkScheme
-        else -> lightScheme
-    }
-    val presetBase = if (dynamicColor) base else base.withPreset(colorPreset, darkTheme)
-    val scheme = if (dynamicColor) {
-        presetBase
-    } else {
-        val seed = presetBase.primary
-        val blend: (Color, Float) -> Color = { color, amount -> lerp(color, seed, amount) }
-        presetBase.copy(
-            background = blend(presetBase.background, 0.03f),
-            surface = blend(presetBase.surface, 0.03f),
-            surfaceContainerLowest = blend(presetBase.surfaceContainerLowest, 0.02f),
-            surfaceContainerLow = blend(presetBase.surfaceContainerLow, 0.05f),
-            surfaceContainer = blend(presetBase.surfaceContainer, 0.07f),
-            surfaceContainerHigh = blend(presetBase.surfaceContainerHigh, 0.09f),
-            surfaceContainerHighest = blend(presetBase.surfaceContainerHighest, 0.11f),
-        )
-    }.let { if (amoled && darkTheme) it.trueBlack() else it }
-
+    val scheme = if (darkTheme) tokiUiDarkScheme else tokiUiLightScheme
     CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
         MaterialTheme(
             colorScheme = scheme,

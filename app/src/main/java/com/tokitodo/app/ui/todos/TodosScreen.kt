@@ -110,6 +110,8 @@ fun TodosScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
         PageTopBar(
+            title = "待办",
+            subtitle = "今天，把注意力留给重要的事",
             chip = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StudyModeChip(
@@ -164,8 +166,8 @@ fun TodosScreen(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    end = 20.dp,
+                    start = 24.dp,
+                    end = 24.dp,
                     top = 18.dp,
                     bottom = 148.dp,
                 ),

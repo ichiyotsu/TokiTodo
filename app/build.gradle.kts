@@ -17,8 +17,8 @@ android {
         applicationId = "com.tokitodo.app"
         minSdk = 31
         targetSdk = targetSdkVersion
-        versionCode = 4
-        versionName = "0.1.0-beta.1"
+        versionCode = 5
+        versionName = "0.1.0-beta.2"
         vectorDrawables.useSupportLibrary = true
     }
 

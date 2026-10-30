@@ -1,15 +1,15 @@
 # TokiTodo — 交接文档
 
-> 更新：2026-10-28 · 版本 0.1.0 Beta.1（versionCode 4）
+> 更新：2026-10-30 · 版本 0.1.0 Beta.2（versionCode 5）
 > 工作区：`D:\DSH\TokiToDo` · 仓库：<https://github.com/ichiyotsu/TokiTodo>
-> 设计参考：`D:\DSH\TokiNote\project`（只借设计语言与 Compose 结构）
+> 设计参考：`D:\DSH\TokiUI`（One UI 页面壳）与 TokiNote（底栏结构）
 
 ## 1. 当前状态
 
 五页 + 全部二级页可运行；`assembleDebug` / `assembleRelease` 通过。
 
 - 底栏：TokiNote 风格 M3 悬浮胶囊，选中展开文字，未选中图标；Haze 实时模糊。
-- 页面：待办 / 待办集 / 锁机 / 统计数据 / 我的；不显示页面大标题。
+- 页面：待办 / 待办集 / 锁机 / 统计数据 / 我的；按 TokiUI One UI 壳使用 34sp 大标题、24dp 页边距与 26/28dp 卡片。
 - 计时：独立全屏页，M3E 五功能栏（选中大圆角、其余小圆角），支持横屏、自定义背景、点击时钟切换字体。
 - 数据统计：待办 / 待办集 / 统计 Tab 共用 `AnalyticsScreen`；含累计、当日、饼图、时段、月度/年度折线、起床/睡眠、前台时长、打断原因、周热力图、排序、回顾、提醒、独立白名单。
 - 锁机：删除小憩；2–60 分钟自定义；`startLockTask` 系统固定；白名单入口；自定义时间段显示暂不支持。
@@ -18,8 +18,8 @@
 - 强制学习：弹窗 + 提升强制性二级页 + 白名单应用选择（策略持久化，系统执行层预留）。
 - 备份：JSON 导入导出，包含封面 / 头像 / 计时背景图片。
 - 截图：`screenshots/`（部分仍是旧版，后续真机回归时统一更新）。
-- 可安装包：`dist/TokiTodo-0.1.0-beta.1.apk`（release + R8，debug 签名）。
-- Release：仅 `0.1.0 Beta.1` 测试版；tag 为 `0.1.0-beta.1`。
+- 可安装包：`dist/TokiTodo-0.1.0-beta.2.apk`（release + R8，debug 签名）。
+- Release：`0.1.0 Beta.1` 与 `0.1.0 Beta.2`；`0.1.0-beta.2` 为最新测试版。
 
 ## 2. 环境
 

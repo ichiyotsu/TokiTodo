@@ -90,6 +90,7 @@ import com.tokitodo.app.ui.components.SheetGrabber
 import com.tokitodo.app.ui.theme.LocalDarkTheme
 import com.tokitodo.app.ui.theme.SectionCardShape
 import com.tokitodo.app.ui.theme.SheetShape
+import com.tokitodo.app.ui.theme.tokiUiBackground
 import java.io.File
 import java.time.LocalDate
 
@@ -130,27 +131,7 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = if (dark) {
-                        listOf(
-                            Color(0xFF3B2430),
-                            Color(0xFF4B2D2A),
-                            Color(0xFF3A2A2D),
-                            Color(0xFF262020),
-                            MaterialTheme.colorScheme.surface,
-                        )
-                    } else {
-                        listOf(
-                            Color(0xFFE07E97),
-                            Color(0xFFECA387),
-                            Color(0xFFF6CDB1),
-                            Color(0xFFF0DCE4),
-                            MaterialTheme.colorScheme.surface,
-                        )
-                    },
-                ),
-            )
+            .tokiUiBackground()
             .verticalScroll(rememberScrollState())
             .padding(bottom = 152.dp),
     ) {
@@ -158,7 +139,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
+                .padding(horizontal = 24.dp, vertical = 10.dp),
         ) {
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                     HeroAction(Icons.Rounded.HelpOutline, "帮助") { helpOpen = true }
@@ -233,13 +214,8 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontSize = 26.sp,
                                     fontWeight = FontWeight.Bold,
-                                    shadow = Shadow(
-                                        color = Color(0xFF5B2A3A).copy(alpha = 0.35f),
-                                        offset = Offset(0f, 2f),
-                                        blurRadius = 10f,
-                                    ),
                                 ),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -247,27 +223,21 @@ fun ProfileScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.25f))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                     .padding(horizontal = 7.dp, vertical = 2.dp),
                             ) {
                                 Text(
                                     text = "本地",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                         Spacer(Modifier.height(3.dp))
                         Text(
                             text = settings.userSignature.ifBlank { "写一句自己的签名" },
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                shadow = Shadow(
-                                    color = Color(0xFF4A1F2C).copy(alpha = 0.45f),
-                                    offset = Offset(0f, 1f),
-                                    blurRadius = 6f,
-                                ),
-                            ),
-                            color = Color.White.copy(alpha = 0.95f),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -281,7 +251,7 @@ fun ProfileScreen(
                 }
             }
 
-        Column(modifier = Modifier.padding(horizontal = 18.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Spacer(Modifier.height(16.dp))
             // 快捷入口
             Surface(
@@ -476,7 +446,7 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "TokiTodo 0.1.0 Beta.1 · 无账号、无广告 · 仅检查更新时联网",
+                text = "TokiTodo 0.1.0 Beta.2 · 无账号、无广告 · 仅检查更新时联网",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 6.dp),
@@ -635,14 +605,14 @@ private fun HeroAction(
         modifier = Modifier
             .size(42.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.26f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = Color.White,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(21.dp),
         )
     }
@@ -654,21 +624,14 @@ private fun HeroStat(text: String, icon: androidx.compose.ui.graphics.vector.Ima
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFFFFF1E4).copy(alpha = 0.9f),
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(15.dp),
         )
         Spacer(Modifier.width(5.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                shadow = Shadow(
-                    color = Color(0xFF3B1A24).copy(alpha = 0.4f),
-                    offset = Offset(0f, 1f),
-                    blurRadius = 5f,
-                ),
-            ),
-            color = Color.White,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
